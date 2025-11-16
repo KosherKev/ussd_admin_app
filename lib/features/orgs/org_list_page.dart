@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../app/theme/app_theme.dart';
+import '../../app/router/routes.dart';
+import '../../shared/utils/helpers.dart';
 import '../../widgets/gradient_header.dart';
 import '../../widgets/glass_card.dart';
 import '../../shared/services/org_service.dart';
@@ -7,6 +10,7 @@ import 'org_store.dart';
 
 class OrgListPage extends StatelessWidget {
   const OrgListPage({super.key});
+  
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -18,66 +22,363 @@ class OrgListPage extends StatelessWidget {
 
 class _Body extends StatefulWidget {
   const _Body();
+  
   @override
   State<_Body> createState() => _BodyState();
 }
 
 class _BodyState extends State<_Body> {
-  final _search = TextEditingController();
+  final _searchController = TextEditingController();
+  String _role = 'org_admin';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRole();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadRole() async {
+    final role = await RoleHelpers.getRole();
+    if (mounted) {
+      setState(() => _role = role);
+    }
+  }
+
+  void _onOrgTap(String orgId) {
+    Navigator.pushNamed(context, Routes.orgDetail, arguments: orgId);
+  }
+
+  Future<void> _onRefresh() async {
+    final store = context.read<OrgStore>();
+    await store.fetch(page: 1, q: _searchController.text.trim());
+  }
+
+  void _onSearch() {
+    final store = context.read<OrgStore>();
+    store.fetch(page: 1, q: _searchController.text.trim());
+  }
+
   @override
   Widget build(BuildContext context) {
     final store = context.watch<OrgStore>();
-    final s = store.state;
-    final pages = s.limit > 0 ? ((s.total + s.limit - 1) ~/ s.limit) : 1;
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const GradientHeader(title: 'Organizations'),
-        const SizedBox(height: 16),
-        GlassCard(
-          child: Row(children: [
-            Expanded(child: TextField(controller: _search, decoration: const InputDecoration(labelText: 'Search organizations'))),
-            const SizedBox(width: 12),
-            ElevatedButton(onPressed: s.loading ? null : () => store.fetch(page: 1, q: _search.text.trim()), child: const Text('Search')),
-          ]),
-        ),
-        const SizedBox(height: 16),
-        Expanded(
-          child: s.loading
-              ? const Center(child: CircularProgressIndicator())
-              : s.error != null
-                  ? Center(child: Text(s.error!, style: const TextStyle(color: Colors.red)))
-                  : ListView.separated(
-                      itemCount: s.items.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (context, i) {
-                        final org = s.items[i];
-                        return GlassCard(
-                          child: Row(children: [
-                            const Icon(Icons.business, color: Colors.white70),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                Text(org.name, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white)),
-                                Text(org.email ?? '', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white70)),
-                              ]),
-                            ),
-                            Text(org.shortName ?? '', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white70)),
-                          ]),
-                        );
-                      },
+    final state = store.state;
+    final pages = state.limit > 0 ? ((state.total + state.limit - 1) ~/ state.limit) : 1;
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: Padding(
+        padding: EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            GradientHeader(
+              title: 'Organizations',
+              warm: true,
+              trailing: state.loading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : null,
+            ),
+
+            SizedBox(height: AppSpacing.md),
+
+            // Search Bar
+            GlassCard(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        labelText: 'Search organizations',
+                        prefixIcon: const Icon(Icons.search),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.sm,
+                        ),
+                      ),
+                      textInputAction: TextInputAction.search,
+                      onSubmitted: (_) => _onSearch(),
                     ),
+                  ),
+                  SizedBox(width: AppSpacing.sm),
+                  ElevatedButton(
+                    onPressed: state.loading ? null : _onSearch,
+                    child: const Text('Search'),
+                  ),
+                  SizedBox(width: AppSpacing.sm),
+                ],
+              ),
+            ),
+
+            SizedBox(height: AppSpacing.md),
+
+            // Organization List
+            Expanded(
+              child: state.loading && state.items.isEmpty
+                  ? const Center(child: CircularProgressIndicator())
+                  : state.error != null
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                size: 64,
+                                color: AppColors.error,
+                              ),
+                              SizedBox(height: AppSpacing.md),
+                              Text(
+                                'Error loading organizations',
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      color: AppColors.white,
+                                    ),
+                              ),
+                              SizedBox(height: AppSpacing.xs),
+                              Text(
+                                state.error!,
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                textAlign: TextAlign.center,
+                              ),
+                              SizedBox(height: AppSpacing.lg),
+                              ElevatedButton(
+                                onPressed: _onRefresh,
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        )
+                      : state.items.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.business_outlined,
+                                    size: 64,
+                                    color: AppColors.textTertiary,
+                                  ),
+                                  SizedBox(height: AppSpacing.md),
+                                  Text(
+                                    'No organizations found',
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                          color: AppColors.white,
+                                        ),
+                                  ),
+                                  SizedBox(height: AppSpacing.xs),
+                                  Text(
+                                    _searchController.text.isNotEmpty
+                                        ? 'Try a different search term'
+                                        : 'Get started by creating an organization',
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          color: AppColors.textSecondary,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : RefreshIndicator(
+                              onRefresh: _onRefresh,
+                              child: ListView.separated(
+                                itemCount: state.items.length,
+                                separatorBuilder: (_, __) => SizedBox(height: AppSpacing.sm),
+                                itemBuilder: (context, i) {
+                                  final org = state.items[i];
+                                  return GlassCard(
+                                    child: InkWell(
+                                      onTap: () => _onOrgTap(org.id),
+                                      borderRadius: BorderRadius.circular(AppRadius.xl),
+                                      child: Padding(
+                                        padding: EdgeInsets.all(AppSpacing.md),
+                                        child: Row(
+                                          children: [
+                                            // Icon
+                                            Container(
+                                              width: 48,
+                                              height: 48,
+                                              decoration: BoxDecoration(
+                                                gradient: AppGradients.warm(),
+                                                borderRadius: BorderRadius.circular(AppRadius.md),
+                                              ),
+                                              child: const Icon(
+                                                Icons.business,
+                                                color: Colors.white,
+                                                size: 24,
+                                              ),
+                                            ),
+
+                                            SizedBox(width: AppSpacing.md),
+
+                                            // Content
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    org.name,
+                                                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                                          color: AppColors.white,
+                                                          fontWeight: FontWeight.w600,
+                                                        ),
+                                                  ),
+                                                  if (org.email != null && org.email!.isNotEmpty) ...[
+                                                    SizedBox(height: AppSpacing.xxs),
+                                                    Row(
+                                                      children: [
+                                                        Icon(
+                                                          Icons.email_outlined,
+                                                          size: 14,
+                                                          color: AppColors.textSecondary,
+                                                        ),
+                                                        SizedBox(width: AppSpacing.xxs),
+                                                        Expanded(
+                                                          child: Text(
+                                                            org.email!,
+                                                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                                  color: AppColors.textSecondary,
+                                                                ),
+                                                            overflow: TextOverflow.ellipsis,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                  if (org.phone != null && org.phone!.isNotEmpty) ...[
+                                                    SizedBox(height: AppSpacing.xxs),
+                                                    Row(
+                                                      children: [
+                                                        Icon(
+                                                          Icons.phone_outlined,
+                                                          size: 14,
+                                                          color: AppColors.textSecondary,
+                                                        ),
+                                                        SizedBox(width: AppSpacing.xxs),
+                                                        Text(
+                                                          org.phone!,
+                                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                                color: AppColors.textSecondary,
+                                                              ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ],
+                                              ),
+                                            ),
+
+                                            SizedBox(width: AppSpacing.sm),
+
+                                            // Short Name Badge & Arrow
+                                            Column(
+                                              crossAxisAlignment: CrossAxisAlignment.end,
+                                              children: [
+                                                if (org.shortName != null && org.shortName!.isNotEmpty)
+                                                  Container(
+                                                    padding: EdgeInsets.symmetric(
+                                                      horizontal: AppSpacing.sm,
+                                                      vertical: AppSpacing.xxs,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: AppColors.primaryAmber.withValues(alpha: 0.1),
+                                                      borderRadius: BorderRadius.circular(AppRadius.xs),
+                                                      border: Border.all(
+                                                        color: AppColors.primaryAmber.withValues(alpha: 0.3),
+                                                      ),
+                                                    ),
+                                                    child: Text(
+                                                      org.shortName!,
+                                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                            color: AppColors.primaryAmber,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                SizedBox(height: AppSpacing.xs),
+                                                Icon(
+                                                  Icons.arrow_forward_ios,
+                                                  size: 16,
+                                                  color: AppColors.textTertiary,
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+            ),
+
+            // Pagination
+            if (state.items.isNotEmpty) ...[
+              SizedBox(height: AppSpacing.sm),
+              GlassCard(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Page ${state.page} of $pages (${state.total} total)',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                    ),
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: state.loading || state.page <= 1
+                              ? null
+                              : () => store.fetch(page: state.page - 1, q: _searchController.text.trim()),
+                          icon: const Icon(Icons.chevron_left),
+                          color: AppColors.primaryAmber,
+                        ),
+                        IconButton(
+                          onPressed: state.loading || state.page >= pages
+                              ? null
+                              : () => store.fetch(page: state.page + 1, q: _searchController.text.trim()),
+                          icon: const Icon(Icons.chevron_right),
+                          color: AppColors.primaryAmber,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
         ),
-        const SizedBox(height: 8),
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text('Page ${s.page} of $pages'),
-          Row(children: [
-            TextButton(onPressed: s.loading || s.page <= 1 ? null : () => store.fetch(page: s.page - 1), child: const Text('Prev')),
-            const SizedBox(width: 8),
-            TextButton(onPressed: s.loading || s.page >= pages ? null : () => store.fetch(page: s.page + 1), child: const Text('Next')),
-          ]),
-        ]),
-      ]),
+      ),
+      floatingActionButton: _role == 'super_admin'
+          ? FloatingActionButton(
+              onPressed: () {
+                // TODO: Implement create organization dialog
+                DialogHelpers.showInfo(context, 'Create organization feature coming soon');
+              },
+              child: const Icon(Icons.add),
+            )
+          : null,
     );
   }
 }
