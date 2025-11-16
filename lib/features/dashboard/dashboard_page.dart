@@ -23,6 +23,9 @@ class _DashboardPageState extends State<DashboardPage> {
   int _totalTransactions = 0;
   double _totalAmount = 0.0;
   double _totalCommission = 0.0;
+  Map<DateTime, int> _dailyCounts = {};
+  Map<String, int> _typeCounts = {};
+  Map<String, double> _typeAmounts = {};
 
   @override
   void initState() {
@@ -57,6 +60,18 @@ class _DashboardPageState extends State<DashboardPage> {
         0.0,
         (sum, t) => sum + t.commission,
       );
+
+      // Build daily buckets for last 7 days
+      _dailyCounts = _generateDailyCounts(_recentTransactions);
+      // Build payment type breakdown
+      final breakdownCounts = <String, int>{};
+      final breakdownAmounts = <String, double>{};
+      for (final t in _recentTransactions) {
+        breakdownCounts[t.paymentType] = (breakdownCounts[t.paymentType] ?? 0) + 1;
+        breakdownAmounts[t.paymentType] = (breakdownAmounts[t.paymentType] ?? 0.0) + t.amount;
+      }
+      _typeCounts = breakdownCounts;
+      _typeAmounts = breakdownAmounts;
 
       if (mounted) {
         setState(() => _loading = false);
@@ -188,6 +203,40 @@ class _DashboardPageState extends State<DashboardPage> {
 
         const SizedBox(height: AppSpacing.lg),
 
+        // Weekly Chart
+        Text(
+          'Weekly Activity',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: AppColors.white,
+              ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        GlassCard(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: _buildWeeklyChart(),
+          ),
+        ),
+
+        const SizedBox(height: AppSpacing.lg),
+
+        // Payment Type Breakdown
+        Text(
+          'Payment Type Breakdown',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: AppColors.white,
+              ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        GlassCard(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: _buildPaymentTypeBreakdown(),
+          ),
+        ),
+
+        const SizedBox(height: AppSpacing.lg),
+
         // Recent Transactions
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -249,6 +298,123 @@ class _DashboardPageState extends State<DashboardPage> {
 
         const SizedBox(height: AppSpacing.lg),
       ],
+    );
+  }
+
+  Map<DateTime, int> _generateDailyCounts(List<Transaction> txs) {
+    final now = DateTime.now();
+    final days = List.generate(7, (i) {
+      final d = DateTime(now.year, now.month, now.day).subtract(Duration(days: 6 - i));
+      return d;
+    });
+    final map = {for (final d in days) d: 0};
+    for (final t in txs) {
+      final d = DateTime(t.initiatedAt.year, t.initiatedAt.month, t.initiatedAt.day);
+      if (map.containsKey(d)) {
+        map[d] = (map[d] ?? 0) + 1;
+      }
+    }
+    return map;
+  }
+
+  Widget _buildWeeklyChart() {
+    final entries = _dailyCounts.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    final maxVal = entries.isEmpty ? 0 : entries.map((e) => e.value).reduce((a, b) => a > b ? a : b);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: entries.map((e) {
+        final ratio = maxVal == 0 ? 0.0 : (e.value / maxVal);
+        final height = 100 * ratio + 8; // minimum height
+        final label = _weekdayLabel(e.key.weekday);
+        return Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                height: height,
+                decoration: BoxDecoration(
+                  gradient: AppGradients.warm(),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                '$label\n${CurrencyFormatters.formatNumber(e.value)}',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  String _weekdayLabel(int weekday) {
+    switch (weekday) {
+      case DateTime.monday:
+        return 'Mon';
+      case DateTime.tuesday:
+        return 'Tue';
+      case DateTime.wednesday:
+        return 'Wed';
+      case DateTime.thursday:
+        return 'Thu';
+      case DateTime.friday:
+        return 'Fri';
+      case DateTime.saturday:
+        return 'Sat';
+      case DateTime.sunday:
+        return 'Sun';
+      default:
+        return '';
+    }
+  }
+
+  Widget _buildPaymentTypeBreakdown() {
+    if (_typeCounts.isEmpty) {
+      return Row(
+        children: [
+          const Icon(Icons.inbox_outlined, color: AppColors.textTertiary),
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            'No data for breakdown',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+          ),
+        ],
+      );
+    }
+    final keys = _typeCounts.keys.toList()
+      ..sort((a, b) => (_typeCounts[b] ?? 0).compareTo(_typeCounts[a] ?? 0));
+    return Column(
+      children: keys.map((k) {
+        final count = _typeCounts[k] ?? 0;
+        final amount = _typeAmounts[k] ?? 0.0;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  k,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.white),
+                ),
+              ),
+              Text(
+                CurrencyFormatters.formatNumber(count),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Text(
+                CurrencyFormatters.formatCompactGHS(amount),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 
