@@ -1,6 +1,7 @@
 /// Utility Functions and Helpers for USSD Admin App
 /// This file contains reusable helper functions for formatting,
 /// validation, and common operations used throughout the app.
+library;
 
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
@@ -355,9 +356,49 @@ class DialogHelpers {
     );
   }
 
+  static void showSuccessWithMessenger(
+    ScaffoldMessengerState messenger,
+    String message,
+  ) {
+    messenger.showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Color(0xFF36C577)),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: const Color(0xFF242730),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   /// Show error snackbar
   static void showError(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error, color: Color(0xFFFF4D4F)),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: const Color(0xFF242730),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+
+  static void showErrorWithMessenger(
+    ScaffoldMessengerState messenger,
+    String message,
+  ) {
+    messenger.showSnackBar(
       SnackBar(
         content: Row(
           children: [

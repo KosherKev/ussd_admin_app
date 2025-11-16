@@ -73,7 +73,7 @@ class _BodyState extends State<_Body> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Padding(
-        padding: EdgeInsets.all(AppSpacing.md),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -93,7 +93,7 @@ class _BodyState extends State<_Body> {
                   : null,
             ),
 
-            SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.md),
 
             // Search Bar
             GlassCard(
@@ -102,9 +102,9 @@ class _BodyState extends State<_Body> {
                   Expanded(
                     child: TextField(
                       controller: _searchController,
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         labelText: 'Search organizations',
-                        prefixIcon: const Icon(Icons.search),
+                        prefixIcon: Icon(Icons.search),
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
@@ -117,17 +117,17 @@ class _BodyState extends State<_Body> {
                       onSubmitted: (_) => _onSearch(),
                     ),
                   ),
-                  SizedBox(width: AppSpacing.sm),
+                  const SizedBox(width: AppSpacing.sm),
                   ElevatedButton(
                     onPressed: state.loading ? null : _onSearch,
                     child: const Text('Search'),
                   ),
-                  SizedBox(width: AppSpacing.sm),
+                  const SizedBox(width: AppSpacing.sm),
                 ],
               ),
             ),
 
-            SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.md),
 
             // Organization List
             Expanded(
@@ -138,19 +138,19 @@ class _BodyState extends State<_Body> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.error_outline,
                                 size: 64,
                                 color: AppColors.error,
                               ),
-                              SizedBox(height: AppSpacing.md),
+                              const SizedBox(height: AppSpacing.md),
                               Text(
                                 'Error loading organizations',
                                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                       color: AppColors.white,
                                     ),
                               ),
-                              SizedBox(height: AppSpacing.xs),
+                              const SizedBox(height: AppSpacing.xs),
                               Text(
                                 state.error!,
                                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -158,7 +158,7 @@ class _BodyState extends State<_Body> {
                                     ),
                                 textAlign: TextAlign.center,
                               ),
-                              SizedBox(height: AppSpacing.lg),
+                              const SizedBox(height: AppSpacing.lg),
                               ElevatedButton(
                                 onPressed: _onRefresh,
                                 child: const Text('Retry'),
@@ -171,19 +171,19 @@ class _BodyState extends State<_Body> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(
+                                  const Icon(
                                     Icons.business_outlined,
                                     size: 64,
                                     color: AppColors.textTertiary,
                                   ),
-                                  SizedBox(height: AppSpacing.md),
+                                  const SizedBox(height: AppSpacing.md),
                                   Text(
                                     'No organizations found',
                                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                           color: AppColors.white,
                                         ),
                                   ),
-                                  SizedBox(height: AppSpacing.xs),
+                                  const SizedBox(height: AppSpacing.xs),
                                   Text(
                                     _searchController.text.isNotEmpty
                                         ? 'Try a different search term'
@@ -199,7 +199,7 @@ class _BodyState extends State<_Body> {
                               onRefresh: _onRefresh,
                               child: ListView.separated(
                                 itemCount: state.items.length,
-                                separatorBuilder: (_, __) => SizedBox(height: AppSpacing.sm),
+                                separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
                                 itemBuilder: (context, i) {
                                   final org = state.items[i];
                                   return GlassCard(
@@ -207,7 +207,7 @@ class _BodyState extends State<_Body> {
                                       onTap: () => _onOrgTap(org.id),
                                       borderRadius: BorderRadius.circular(AppRadius.xl),
                                       child: Padding(
-                                        padding: EdgeInsets.all(AppSpacing.md),
+                                        padding: const EdgeInsets.all(AppSpacing.md),
                                         child: Row(
                                           children: [
                                             // Icon
@@ -225,7 +225,7 @@ class _BodyState extends State<_Body> {
                                               ),
                                             ),
 
-                                            SizedBox(width: AppSpacing.md),
+                                            const SizedBox(width: AppSpacing.md),
 
                                             // Content
                                             Expanded(
@@ -240,15 +240,15 @@ class _BodyState extends State<_Body> {
                                                         ),
                                                   ),
                                                   if (org.email != null && org.email!.isNotEmpty) ...[
-                                                    SizedBox(height: AppSpacing.xxs),
+                                                    const SizedBox(height: AppSpacing.xxs),
                                                     Row(
                                                       children: [
-                                                        Icon(
+                                                        const Icon(
                                                           Icons.email_outlined,
                                                           size: 14,
                                                           color: AppColors.textSecondary,
                                                         ),
-                                                        SizedBox(width: AppSpacing.xxs),
+                                                        const SizedBox(width: AppSpacing.xxs),
                                                         Expanded(
                                                           child: Text(
                                                             org.email!,
@@ -262,15 +262,15 @@ class _BodyState extends State<_Body> {
                                                     ),
                                                   ],
                                                   if (org.phone != null && org.phone!.isNotEmpty) ...[
-                                                    SizedBox(height: AppSpacing.xxs),
+                                                    const SizedBox(height: AppSpacing.xxs),
                                                     Row(
                                                       children: [
-                                                        Icon(
+                                                        const Icon(
                                                           Icons.phone_outlined,
                                                           size: 14,
                                                           color: AppColors.textSecondary,
                                                         ),
-                                                        SizedBox(width: AppSpacing.xxs),
+                                                        const SizedBox(width: AppSpacing.xxs),
                                                         Text(
                                                           org.phone!,
                                                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -284,7 +284,7 @@ class _BodyState extends State<_Body> {
                                               ),
                                             ),
 
-                                            SizedBox(width: AppSpacing.sm),
+                                            const SizedBox(width: AppSpacing.sm),
 
                                             // Short Name Badge & Arrow
                                             Column(
@@ -292,7 +292,7 @@ class _BodyState extends State<_Body> {
                                               children: [
                                                 if (org.shortName != null && org.shortName!.isNotEmpty)
                                                   Container(
-                                                    padding: EdgeInsets.symmetric(
+                                                    padding: const EdgeInsets.symmetric(
                                                       horizontal: AppSpacing.sm,
                                                       vertical: AppSpacing.xxs,
                                                     ),
@@ -310,8 +310,8 @@ class _BodyState extends State<_Body> {
                                                           ),
                                                     ),
                                                   ),
-                                                SizedBox(height: AppSpacing.xs),
-                                                Icon(
+                                                const SizedBox(height: AppSpacing.xs),
+                                                const Icon(
                                                   Icons.arrow_forward_ios,
                                                   size: 16,
                                                   color: AppColors.textTertiary,
@@ -330,9 +330,9 @@ class _BodyState extends State<_Body> {
 
             // Pagination
             if (state.items.isNotEmpty) ...[
-              SizedBox(height: AppSpacing.sm),
+              const SizedBox(height: AppSpacing.sm),
               GlassCard(
-                padding: EdgeInsets.symmetric(
+                padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.md,
                   vertical: AppSpacing.sm,
                 ),

@@ -40,7 +40,7 @@ class StatsCard extends StatelessWidget {
             ),
           ),
 
-          SizedBox(width: AppSpacing.md),
+          const SizedBox(width: AppSpacing.md),
 
           // Content
           Expanded(
@@ -53,7 +53,7 @@ class StatsCard extends StatelessWidget {
                         color: AppColors.textSecondary,
                       ),
                 ),
-                SizedBox(height: AppSpacing.xxs),
+                const SizedBox(height: AppSpacing.xxs),
                 Text(
                   value,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -62,7 +62,7 @@ class StatsCard extends StatelessWidget {
                       ),
                 ),
                 if (trend != null) ...[
-                  SizedBox(height: AppSpacing.xxs),
+                  const SizedBox(height: AppSpacing.xxs),
                   Row(
                     children: [
                       Icon(
@@ -74,7 +74,7 @@ class StatsCard extends StatelessWidget {
                             ? AppColors.success
                             : AppColors.error,
                       ),
-                      SizedBox(width: AppSpacing.xxs),
+                      const SizedBox(width: AppSpacing.xxs),
                       Text(
                         trend!,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../../app/theme/app_theme.dart';
 import '../../shared/utils/helpers.dart';
 import '../../shared/models/subscription.dart';
@@ -85,26 +86,38 @@ class _SubscriptionManagePageState extends State<SubscriptionManagePage> {
     );
 
     if (!confirmed) return;
+    if (!mounted) return;
 
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
+    final pageNavigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    DialogHelpers.showLoading(context, message: 'Activating...');
+    _activateAsync(rootNavigator, pageNavigator, messenger);
+  }
+
+  Future<void> _activateAsync(
+    NavigatorState rootNavigator,
+    NavigatorState pageNavigator,
+    ScaffoldMessengerState messenger,
+  ) async {
     try {
-      DialogHelpers.showLoading(context, message: 'Activating...');
-
       await _service.activate(
         widget.id,
         billingPeriod: _selectedPeriod,
         startDate: _selectedStartDate,
       );
 
-      if (mounted) {
-        DialogHelpers.hideLoading(context);
-        DialogHelpers.showSuccess(context, 'Subscription activated successfully');
-        Navigator.pop(context);
+      if (!mounted) {
+        rootNavigator.pop();
+        return;
       }
+
+      rootNavigator.pop();
+      DialogHelpers.showSuccessWithMessenger(messenger, 'Subscription activated successfully');
+      pageNavigator.pop();
     } catch (e) {
-      if (mounted) {
-        DialogHelpers.hideLoading(context);
-        ErrorHandlers.handleError(context, e);
-      }
+      rootNavigator.pop();
+      DialogHelpers.showErrorWithMessenger(messenger, ErrorHandlers.getErrorMessage(e));
     }
   }
 
@@ -118,22 +131,34 @@ class _SubscriptionManagePageState extends State<SubscriptionManagePage> {
     );
 
     if (!confirmed) return;
+    if (!mounted) return;
 
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
+    final pageNavigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    DialogHelpers.showLoading(context, message: 'Cancelling...');
+    _cancelAsync(rootNavigator, pageNavigator, messenger);
+  }
+
+  Future<void> _cancelAsync(
+    NavigatorState rootNavigator,
+    NavigatorState pageNavigator,
+    ScaffoldMessengerState messenger,
+  ) async {
     try {
-      DialogHelpers.showLoading(context, message: 'Cancelling...');
-
       await _service.cancel(widget.id);
 
-      if (mounted) {
-        DialogHelpers.hideLoading(context);
-        DialogHelpers.showSuccess(context, 'Subscription cancelled successfully');
-        Navigator.pop(context);
+      if (!mounted) {
+        rootNavigator.pop();
+        return;
       }
+
+      rootNavigator.pop();
+      DialogHelpers.showSuccessWithMessenger(messenger, 'Subscription cancelled successfully');
+      pageNavigator.pop();
     } catch (e) {
-      if (mounted) {
-        DialogHelpers.hideLoading(context);
-        ErrorHandlers.handleError(context, e);
-      }
+      rootNavigator.pop();
+      DialogHelpers.showErrorWithMessenger(messenger, ErrorHandlers.getErrorMessage(e));
     }
   }
 
@@ -146,7 +171,7 @@ class _SubscriptionManagePageState extends State<SubscriptionManagePage> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.dark(
+            colorScheme: const ColorScheme.dark(
               primary: AppColors.primaryAmber,
               onPrimary: Colors.black,
               surface: AppColors.surfaceLow,
@@ -185,19 +210,19 @@ class _SubscriptionManagePageState extends State<SubscriptionManagePage> {
   Widget _buildError() {
     return Center(
       child: Padding(
-        padding: EdgeInsets.all(AppSpacing.lg),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: AppColors.error),
-            SizedBox(height: AppSpacing.md),
+            const Icon(Icons.error_outline, size: 64, color: AppColors.error),
+            const SizedBox(height: AppSpacing.md),
             Text(
               'Error Loading Subscription',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: AppColors.white,
                   ),
             ),
-            SizedBox(height: AppSpacing.xs),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               _error!,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -205,7 +230,7 @@ class _SubscriptionManagePageState extends State<SubscriptionManagePage> {
                   ),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             ElevatedButton(onPressed: _load, child: const Text('Retry')),
           ],
         ),
@@ -217,13 +242,13 @@ class _SubscriptionManagePageState extends State<SubscriptionManagePage> {
     if (_subscription == null) return const SizedBox();
 
     return SingleChildScrollView(
-      padding: EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GradientHeader(title: 'Manage Subscription', warm: true),
+          const GradientHeader(title: 'Manage Subscription', warm: true),
           
-          SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.lg),
 
           // Current Status
           GlassCard(
@@ -237,12 +262,12 @@ class _SubscriptionManagePageState extends State<SubscriptionManagePage> {
                       ),
                 ),
                 
-                SizedBox(height: AppSpacing.md),
+                const SizedBox(height: AppSpacing.md),
                 
                 Row(
                   children: [
                     StatusHelpers.buildStatusBadge(_subscription!.status),
-                    SizedBox(width: AppSpacing.md),
+                    const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Text(
                         _subscription!.isActive
@@ -261,7 +286,7 @@ class _SubscriptionManagePageState extends State<SubscriptionManagePage> {
             ),
           ),
 
-          SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.lg),
 
           // Activate Section
           if (!_subscription!.isActive) ...[
@@ -272,7 +297,7 @@ class _SubscriptionManagePageState extends State<SubscriptionManagePage> {
                   ),
             ),
             
-            SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: AppSpacing.sm),
 
             // Billing Period Selection
             GlassCard(
@@ -286,12 +311,12 @@ class _SubscriptionManagePageState extends State<SubscriptionManagePage> {
                         ),
                   ),
                   
-                  SizedBox(height: AppSpacing.md),
+                  const SizedBox(height: AppSpacing.md),
 
                   ..._billingPeriods.map((period) {
                     final isSelected = _selectedPeriod == period['value'];
                     return Padding(
-                      padding: EdgeInsets.only(bottom: AppSpacing.sm),
+                      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                       child: InkWell(
                         onTap: () {
                           setState(() {
@@ -300,7 +325,7 @@ class _SubscriptionManagePageState extends State<SubscriptionManagePage> {
                         },
                         borderRadius: BorderRadius.circular(AppRadius.md),
                         child: Container(
-                          padding: EdgeInsets.all(AppSpacing.md),
+                          padding: const EdgeInsets.all(AppSpacing.md),
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? AppColors.primaryAmber.withValues(alpha: 0.1)
@@ -319,7 +344,7 @@ class _SubscriptionManagePageState extends State<SubscriptionManagePage> {
                                 period['icon']!,
                                 style: const TextStyle(fontSize: 24),
                               ),
-                              SizedBox(width: AppSpacing.md),
+                              const SizedBox(width: AppSpacing.md),
                               Expanded(
                                 child: Text(
                                   period['label']!,
@@ -332,7 +357,7 @@ class _SubscriptionManagePageState extends State<SubscriptionManagePage> {
                                 ),
                               ),
                               if (isSelected)
-                                Icon(
+                                const Icon(
                                   Icons.check_circle,
                                   color: AppColors.primaryAmber,
                                 ),
@@ -341,12 +366,12 @@ class _SubscriptionManagePageState extends State<SubscriptionManagePage> {
                         ),
                       ),
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
             ),
 
-            SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.md),
 
             // Start Date Selection
             GlassCard(
@@ -359,7 +384,7 @@ class _SubscriptionManagePageState extends State<SubscriptionManagePage> {
                           color: AppColors.white,
                         ),
                   ),
-                  SizedBox(height: AppSpacing.xs),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
                     'Leave blank to start immediately',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -367,13 +392,13 @@ class _SubscriptionManagePageState extends State<SubscriptionManagePage> {
                         ),
                   ),
                   
-                  SizedBox(height: AppSpacing.md),
+                  const SizedBox(height: AppSpacing.md),
 
                   InkWell(
                     onTap: _pickStartDate,
                     borderRadius: BorderRadius.circular(AppRadius.md),
                     child: Container(
-                      padding: EdgeInsets.all(AppSpacing.md),
+                      padding: const EdgeInsets.all(AppSpacing.md),
                       decoration: BoxDecoration(
                         color: AppColors.surfaceLow,
                         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -385,11 +410,11 @@ class _SubscriptionManagePageState extends State<SubscriptionManagePage> {
                       ),
                       child: Row(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.calendar_today,
                             color: AppColors.primaryAmber,
                           ),
-                          SizedBox(width: AppSpacing.md),
+                          const SizedBox(width: AppSpacing.md),
                           Expanded(
                             child: Text(
                               _selectedStartDate != null
@@ -400,7 +425,7 @@ class _SubscriptionManagePageState extends State<SubscriptionManagePage> {
                                   ),
                             ),
                           ),
-                          Icon(
+                          const Icon(
                             Icons.arrow_drop_down,
                             color: AppColors.textSecondary,
                           ),
@@ -412,7 +437,7 @@ class _SubscriptionManagePageState extends State<SubscriptionManagePage> {
               ),
             ),
 
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
 
             // Activate Button
             SizedBox(
@@ -435,7 +460,7 @@ class _SubscriptionManagePageState extends State<SubscriptionManagePage> {
                   ),
             ),
             
-            SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: AppSpacing.sm),
 
             GlassCard(
               child: Column(
@@ -443,8 +468,8 @@ class _SubscriptionManagePageState extends State<SubscriptionManagePage> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.warning, color: AppColors.warning),
-                      SizedBox(width: AppSpacing.md),
+                      const Icon(Icons.warning, color: AppColors.warning),
+                      const SizedBox(width: AppSpacing.md),
                       Expanded(
                         child: Text(
                           'Cancel Subscription',
@@ -456,7 +481,7 @@ class _SubscriptionManagePageState extends State<SubscriptionManagePage> {
                     ],
                   ),
                   
-                  SizedBox(height: AppSpacing.sm),
+                  const SizedBox(height: AppSpacing.sm),
                   
                   Text(
                     'This will immediately cancel the subscription. This action cannot be undone.',
@@ -465,7 +490,7 @@ class _SubscriptionManagePageState extends State<SubscriptionManagePage> {
                         ),
                   ),
                   
-                  SizedBox(height: AppSpacing.md),
+                  const SizedBox(height: AppSpacing.md),
 
                   SizedBox(
                     width: double.infinity,
@@ -485,7 +510,7 @@ class _SubscriptionManagePageState extends State<SubscriptionManagePage> {
             ),
           ],
 
-          SizedBox(height: AppSpacing.xxl),
+          const SizedBox(height: AppSpacing.xxl),
         ],
       ),
     );

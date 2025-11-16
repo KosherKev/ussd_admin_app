@@ -35,7 +35,6 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
   bool _enabled = true;
   bool _loading = true;
   bool _saving = false;
-  PaymentType? _existingType;
 
   bool get _isNewType => widget.typeId == 'new';
 
@@ -69,7 +68,6 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
 
       if (mounted) {
         setState(() {
-          _existingType = type;
           _typeIdController.text = type.typeId;
           _nameController.text = type.name;
           _descriptionController.text = type.description ?? '';
@@ -164,7 +162,7 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: EdgeInsets.all(AppSpacing.md),
+              padding: const EdgeInsets.all(AppSpacing.md),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -175,7 +173,7 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
                       warm: true,
                     ),
 
-                    SizedBox(height: AppSpacing.lg),
+                    const SizedBox(height: AppSpacing.lg),
 
                     // Type ID (only for new types)
                     if (_isNewType) ...[
@@ -189,14 +187,14 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
                                     color: AppColors.white,
                                   ),
                             ),
-                            SizedBox(height: AppSpacing.xs),
+                            const SizedBox(height: AppSpacing.xs),
                             Text(
                               'Unique identifier for this payment type (e.g., "tithe", "offering")',
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: AppColors.textSecondary,
                                   ),
                             ),
-                            SizedBox(height: AppSpacing.md),
+                            const SizedBox(height: AppSpacing.md),
                             TextFormField(
                               controller: _typeIdController,
                               decoration: const InputDecoration(
@@ -218,7 +216,7 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
                           ],
                         ),
                       ),
-                      SizedBox(height: AppSpacing.md),
+                      const SizedBox(height: AppSpacing.md),
                     ],
 
                     // Basic Information
@@ -232,7 +230,7 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
                                   color: AppColors.white,
                                 ),
                           ),
-                          SizedBox(height: AppSpacing.md),
+                          const SizedBox(height: AppSpacing.md),
 
                           // Name
                           TextFormField(
@@ -249,7 +247,7 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
                             textInputAction: TextInputAction.next,
                           ),
 
-                          SizedBox(height: AppSpacing.md),
+                          const SizedBox(height: AppSpacing.md),
 
                           // Description
                           TextFormField(
@@ -263,11 +261,11 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
                             textInputAction: TextInputAction.next,
                           ),
 
-                          SizedBox(height: AppSpacing.md),
+                          const SizedBox(height: AppSpacing.md),
 
                           // Enabled Toggle
                           Container(
-                            padding: EdgeInsets.all(AppSpacing.md),
+                            padding: const EdgeInsets.all(AppSpacing.md),
                             decoration: BoxDecoration(
                               color: AppColors.surfaceLow,
                               borderRadius: BorderRadius.circular(AppRadius.md),
@@ -288,7 +286,7 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
                                     size: 24,
                                   ),
                                 ),
-                                SizedBox(width: AppSpacing.md),
+                                const SizedBox(width: AppSpacing.md),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,7 +297,7 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
                                               color: AppColors.white,
                                             ),
                                       ),
-                                      SizedBox(height: AppSpacing.xxs),
+                                      const SizedBox(height: AppSpacing.xxs),
                                       Text(
                                         _enabled
                                             ? 'Users can make payments using this type'
@@ -324,7 +322,7 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
                       ),
                     ),
 
-                    SizedBox(height: AppSpacing.md),
+                    const SizedBox(height: AppSpacing.md),
 
                     // Amount Limits
                     GlassCard(
@@ -337,14 +335,14 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
                                   color: AppColors.white,
                                 ),
                           ),
-                          SizedBox(height: AppSpacing.xs),
+                          const SizedBox(height: AppSpacing.xs),
                           Text(
                             'Set minimum and maximum payment amounts in GHS',
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                   color: AppColors.textSecondary,
                                 ),
                           ),
-                          SizedBox(height: AppSpacing.md),
+                          const SizedBox(height: AppSpacing.md),
 
                           // Min Amount
                           TextFormField(
@@ -372,7 +370,7 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
                             ],
                           ),
 
-                          SizedBox(height: AppSpacing.md),
+                          const SizedBox(height: AppSpacing.md),
 
                           // Max Amount
                           TextFormField(
@@ -403,7 +401,7 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
                       ),
                     ),
 
-                    SizedBox(height: AppSpacing.xxl),
+                    const SizedBox(height: AppSpacing.xxl),
 
                     // Save Button
                     SizedBox(
@@ -425,7 +423,7 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
                       ),
                     ),
 
-                    SizedBox(height: AppSpacing.md),
+                    const SizedBox(height: AppSpacing.md),
 
                     // Cancel Button
                     SizedBox(
@@ -438,7 +436,7 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
                       ),
                     ),
 
-                    SizedBox(height: AppSpacing.xxl),
+                    const SizedBox(height: AppSpacing.xxl),
                   ],
                 ),
               ),

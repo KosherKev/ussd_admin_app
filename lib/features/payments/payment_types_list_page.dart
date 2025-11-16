@@ -21,7 +21,6 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
   List<PaymentType> _paymentTypes = [];
   bool _loading = true;
   String? _error;
-  String _role = 'org_admin';
 
   @override
   void initState() {
@@ -36,7 +35,6 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
     });
 
     try {
-      _role = await RoleHelpers.getRole();
       final types = await _service.list(widget.orgId);
 
       if (mounted) {
@@ -100,7 +98,7 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
         elevation: 0,
       ),
       body: Padding(
-        padding: EdgeInsets.all(AppSpacing.md),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -118,7 +116,7 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
                     )
                   : null,
             ),
-            SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.md),
             Expanded(
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
@@ -127,19 +125,19 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.error_outline,
                                 size: 64,
                                 color: AppColors.error,
                               ),
-                              SizedBox(height: AppSpacing.md),
+                              const SizedBox(height: AppSpacing.md),
                               Text(
                                 'Error Loading Payment Types',
                                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                       color: AppColors.white,
                                     ),
                               ),
-                              SizedBox(height: AppSpacing.xs),
+                              const SizedBox(height: AppSpacing.xs),
                               Text(
                                 _error!,
                                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -147,7 +145,7 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
                                     ),
                                 textAlign: TextAlign.center,
                               ),
-                              SizedBox(height: AppSpacing.lg),
+                              const SizedBox(height: AppSpacing.lg),
                               ElevatedButton(
                                 onPressed: _load,
                                 child: const Text('Retry'),
@@ -160,19 +158,19 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(
+                                  const Icon(
                                     Icons.payment_outlined,
                                     size: 64,
                                     color: AppColors.textTertiary,
                                   ),
-                                  SizedBox(height: AppSpacing.md),
+                                  const SizedBox(height: AppSpacing.md),
                                   Text(
                                     'No Payment Types',
                                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                           color: AppColors.white,
                                         ),
                                   ),
-                                  SizedBox(height: AppSpacing.xs),
+                                  const SizedBox(height: AppSpacing.xs),
                                   Text(
                                     'Add payment types to get started',
                                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -186,7 +184,7 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
                               onRefresh: _load,
                               child: ListView.separated(
                                 itemCount: _paymentTypes.length,
-                                separatorBuilder: (_, __) => SizedBox(height: AppSpacing.sm),
+                                separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
                                 itemBuilder: (context, i) {
                                   final type = _paymentTypes[i];
                                   return _buildPaymentTypeCard(type);
@@ -210,7 +208,7 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
         onTap: () => _navigateToEdit(type),
         borderRadius: BorderRadius.circular(AppRadius.xl),
         child: Padding(
-          padding: EdgeInsets.all(AppSpacing.md),
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -223,7 +221,7 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
                     decoration: BoxDecoration(
                       gradient: type.enabled
                           ? AppGradients.warm()
-                          : LinearGradient(
+                          : const LinearGradient(
                               colors: [
                                 AppColors.gray600,
                                 AppColors.gray700,
@@ -231,14 +229,14 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
                             ),
                       borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
-                    child: Icon(
+                    child: const Icon(
                       Icons.payment,
                       color: Colors.white,
                       size: 24,
                     ),
                   ),
 
-                  SizedBox(width: AppSpacing.md),
+                  const SizedBox(width: AppSpacing.md),
 
                   // Content
                   Expanded(
@@ -258,7 +256,7 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
                             ),
                             // Status Badge
                             Container(
-                              padding: EdgeInsets.symmetric(
+                              padding: const EdgeInsets.symmetric(
                                 horizontal: AppSpacing.sm,
                                 vertical: AppSpacing.xxs,
                               ),
@@ -280,7 +278,7 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
                           ],
                         ),
                         if (type.description != null && type.description!.isNotEmpty) ...[
-                          SizedBox(height: AppSpacing.xxs),
+                          const SizedBox(height: AppSpacing.xxs),
                           Text(
                             type.description!,
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -296,14 +294,14 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
                 ],
               ),
 
-              SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.md),
 
               // Amount Range
               Row(
                 children: [
                   Expanded(
                     child: Container(
-                      padding: EdgeInsets.all(AppSpacing.sm),
+                      padding: const EdgeInsets.all(AppSpacing.sm),
                       decoration: BoxDecoration(
                         color: AppColors.surfaceLow,
                         borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -317,7 +315,7 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
                                   color: AppColors.textSecondary,
                                 ),
                           ),
-                          SizedBox(height: AppSpacing.xxs),
+                          const SizedBox(height: AppSpacing.xxs),
                           Text(
                             CurrencyFormatters.formatGHS(type.minAmount),
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -329,10 +327,10 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
                       ),
                     ),
                   ),
-                  SizedBox(width: AppSpacing.sm),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Container(
-                      padding: EdgeInsets.all(AppSpacing.sm),
+                      padding: const EdgeInsets.all(AppSpacing.sm),
                       decoration: BoxDecoration(
                         color: AppColors.surfaceLow,
                         borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -346,7 +344,7 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
                                   color: AppColors.textSecondary,
                                 ),
                           ),
-                          SizedBox(height: AppSpacing.xxs),
+                          const SizedBox(height: AppSpacing.xxs),
                           Text(
                             CurrencyFormatters.formatGHS(type.maxAmount),
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -361,7 +359,7 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
                 ],
               ),
 
-              SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.md),
 
               // Actions
               Row(
@@ -372,14 +370,14 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
                       icon: const Icon(Icons.edit, size: 18),
                       label: const Text('Edit'),
                       style: OutlinedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(
+                        padding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.md,
                           vertical: AppSpacing.sm,
                         ),
                       ),
                     ),
                   ),
-                  SizedBox(width: AppSpacing.sm),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () => _toggleEnabled(type),
@@ -390,7 +388,7 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
                       label: Text(type.enabled ? 'Disable' : 'Enable'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: type.enabled ? AppColors.warning : AppColors.success,
-                        padding: EdgeInsets.symmetric(
+                        padding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.md,
                           vertical: AppSpacing.sm,
                         ),

@@ -92,7 +92,7 @@
 
 #### Priority 5: DashboardPage Enhancement (6 hours) ⭐⭐
 **File:** `lib/features/dashboard/dashboard_page.dart`  
-**Status:** Shows placeholder data  
+**Status:** Real data wired (ReportsService + StatsCard)  
 **Why Fifth:** High visibility, user's first view
 
 **Features:**
@@ -116,7 +116,7 @@
 
 #### Priority 6: StatsCard Widget (1 hour) ⭐⭐
 **File:** `lib/widgets/stats_card.dart`  
-**Status:** Need to create  
+**Status:** Complete  
 **Why Sixth:** Required for Dashboard
 
 **Features:**

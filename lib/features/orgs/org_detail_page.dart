@@ -4,7 +4,6 @@ import '../../app/router/routes.dart';
 import '../../shared/utils/helpers.dart';
 import '../../shared/models/organization.dart';
 import '../../shared/services/org_service.dart';
-import '../../widgets/gradient_header.dart';
 import '../../widgets/glass_card.dart';
 
 class OrgDetailPage extends StatefulWidget {
@@ -88,23 +87,23 @@ class _OrgDetailPageState extends State<OrgDetailPage> {
           : _error != null
               ? Center(
                   child: Padding(
-                    padding: EdgeInsets.all(AppSpacing.lg),
+                    padding: const EdgeInsets.all(AppSpacing.lg),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.error_outline,
                           size: 64,
                           color: AppColors.error,
                         ),
-                        SizedBox(height: AppSpacing.md),
+                        const SizedBox(height: AppSpacing.md),
                         Text(
                           'Error Loading Organization',
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                 color: AppColors.white,
                               ),
                         ),
-                        SizedBox(height: AppSpacing.xs),
+                        const SizedBox(height: AppSpacing.xs),
                         Text(
                           _error!,
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -112,7 +111,7 @@ class _OrgDetailPageState extends State<OrgDetailPage> {
                               ),
                           textAlign: TextAlign.center,
                         ),
-                        SizedBox(height: AppSpacing.lg),
+                        const SizedBox(height: AppSpacing.lg),
                         ElevatedButton(
                           onPressed: _load,
                           child: const Text('Retry'),
@@ -129,7 +128,7 @@ class _OrgDetailPageState extends State<OrgDetailPage> {
     if (_org == null) return const SizedBox();
 
     return SingleChildScrollView(
-      padding: EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -152,7 +151,7 @@ class _OrgDetailPageState extends State<OrgDetailPage> {
                   ),
                 ),
 
-                SizedBox(height: AppSpacing.md),
+                const SizedBox(height: AppSpacing.md),
 
                 // Name
                 Text(
@@ -164,9 +163,9 @@ class _OrgDetailPageState extends State<OrgDetailPage> {
                 ),
 
                 if (_org!.shortName != null && _org!.shortName!.isNotEmpty) ...[
-                  SizedBox(height: AppSpacing.xs),
+                  const SizedBox(height: AppSpacing.xs),
                   Container(
-                    padding: EdgeInsets.symmetric(
+                    padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.md,
                       vertical: AppSpacing.xxs,
                     ),
@@ -187,7 +186,7 @@ class _OrgDetailPageState extends State<OrgDetailPage> {
             ),
           ),
 
-          SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.md),
 
           // Contact Information
           GlassCard(
@@ -200,7 +199,7 @@ class _OrgDetailPageState extends State<OrgDetailPage> {
                         color: AppColors.white,
                       ),
                 ),
-                SizedBox(height: AppSpacing.md),
+                const SizedBox(height: AppSpacing.md),
                 
                 if (_org!.email != null && _org!.email!.isNotEmpty)
                   _buildInfoRow(
@@ -210,7 +209,7 @@ class _OrgDetailPageState extends State<OrgDetailPage> {
                   ),
 
                 if (_org!.phone != null && _org!.phone!.isNotEmpty) ...[
-                  SizedBox(height: AppSpacing.sm),
+                  const SizedBox(height: AppSpacing.sm),
                   _buildInfoRow(
                     icon: Icons.phone_outlined,
                     label: 'Phone',
@@ -219,7 +218,7 @@ class _OrgDetailPageState extends State<OrgDetailPage> {
                 ],
 
                 if (_org!.ussdNumber != null && _org!.ussdNumber!.isNotEmpty) ...[
-                  SizedBox(height: AppSpacing.sm),
+                  const SizedBox(height: AppSpacing.sm),
                   _buildInfoRow(
                     icon: Icons.dialpad_outlined,
                     label: 'USSD Number',
@@ -230,7 +229,7 @@ class _OrgDetailPageState extends State<OrgDetailPage> {
             ),
           ),
 
-          SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.md),
 
           // Quick Actions
           Text(
@@ -240,7 +239,7 @@ class _OrgDetailPageState extends State<OrgDetailPage> {
                 ),
           ),
 
-          SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.sm),
 
           // Payment Types Card
           _buildActionCard(
@@ -250,7 +249,7 @@ class _OrgDetailPageState extends State<OrgDetailPage> {
             onTap: _navigateToPaymentTypes,
           ),
 
-          SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.sm),
 
           // Subscription Card
           _buildActionCard(
@@ -260,7 +259,7 @@ class _OrgDetailPageState extends State<OrgDetailPage> {
             onTap: _navigateToSubscription,
           ),
 
-          SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.sm),
 
           // Reports Card
           _buildActionCard(
@@ -270,7 +269,7 @@ class _OrgDetailPageState extends State<OrgDetailPage> {
             onTap: _navigateToReports,
           ),
 
-          SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.lg),
 
           // Edit Button (Super Admin Only)
           if (_role == 'super_admin')
@@ -312,7 +311,7 @@ class _OrgDetailPageState extends State<OrgDetailPage> {
             color: AppColors.primaryAmber,
           ),
         ),
-        SizedBox(width: AppSpacing.md),
+        const SizedBox(width: AppSpacing.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -323,7 +322,7 @@ class _OrgDetailPageState extends State<OrgDetailPage> {
                       color: AppColors.textSecondary,
                     ),
               ),
-              SizedBox(height: AppSpacing.xxs),
+              const SizedBox(height: AppSpacing.xxs),
               Text(
                 value,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -348,7 +347,7 @@ class _OrgDetailPageState extends State<OrgDetailPage> {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.xl),
         child: Padding(
-          padding: EdgeInsets.all(AppSpacing.md),
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: Row(
             children: [
               Container(
@@ -364,7 +363,7 @@ class _OrgDetailPageState extends State<OrgDetailPage> {
                   size: 24,
                 ),
               ),
-              SizedBox(width: AppSpacing.md),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -376,7 +375,7 @@ class _OrgDetailPageState extends State<OrgDetailPage> {
                             fontWeight: FontWeight.w600,
                           ),
                     ),
-                    SizedBox(height: AppSpacing.xxs),
+                    const SizedBox(height: AppSpacing.xxs),
                     Text(
                       description,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -386,7 +385,7 @@ class _OrgDetailPageState extends State<OrgDetailPage> {
                   ],
                 ),
               ),
-              Icon(
+              const Icon(
                 Icons.arrow_forward_ios,
                 size: 16,
                 color: AppColors.textTertiary,

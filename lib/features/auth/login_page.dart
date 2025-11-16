@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../shared/http/client.dart';
 import '../../shared/utils/helpers.dart';
@@ -78,7 +77,7 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -92,7 +91,7 @@ class _LoginPageState extends State<LoginPage> {
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: EdgeInsets.all(AppSpacing.lg),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 420),
                 child: Column(
@@ -114,7 +113,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
 
-                    SizedBox(height: AppSpacing.xl),
+                    const SizedBox(height: AppSpacing.xl),
 
                     // Title
                     Text(
@@ -124,7 +123,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                     ),
 
-                    SizedBox(height: AppSpacing.xs),
+                    const SizedBox(height: AppSpacing.xs),
 
                     Text(
                       'Sign in to continue',
@@ -133,7 +132,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                     ),
 
-                    SizedBox(height: AppSpacing.xxl),
+                    const SizedBox(height: AppSpacing.xxl),
 
                     // Login Form
                     GlassCard(
@@ -156,7 +155,7 @@ class _LoginPageState extends State<LoginPage> {
                               validator: Validators.email,
                             ),
 
-                            SizedBox(height: AppSpacing.md),
+                            const SizedBox(height: AppSpacing.md),
 
                             // Password Field
                             TextFormField(
@@ -188,7 +187,7 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             ),
 
-                            SizedBox(height: AppSpacing.lg),
+                            const SizedBox(height: AppSpacing.lg),
 
                             // Login Button
                             SizedBox(
@@ -214,7 +213,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
 
-                    SizedBox(height: AppSpacing.lg),
+                    const SizedBox(height: AppSpacing.lg),
 
                     // Footer
                     Text(

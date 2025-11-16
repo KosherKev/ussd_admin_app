@@ -59,7 +59,7 @@ class _SplashPageState extends State<SplashPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -90,7 +90,7 @@ class _SplashPageState extends State<SplashPage> {
                 ),
               ),
               
-              SizedBox(height: AppSpacing.xxl),
+              const SizedBox(height: AppSpacing.xxl),
               
               // App title
               Text(
@@ -101,7 +101,7 @@ class _SplashPageState extends State<SplashPage> {
                 ),
               ),
               
-              SizedBox(height: AppSpacing.xs),
+              const SizedBox(height: AppSpacing.xs),
               
               Text(
                 'Payment Management Platform',
@@ -110,10 +110,10 @@ class _SplashPageState extends State<SplashPage> {
                 ),
               ),
               
-              SizedBox(height: AppSpacing.xxxl),
+              const SizedBox(height: AppSpacing.xxxl),
               
               // Loading indicator
-              SizedBox(
+              const SizedBox(
                 width: 40,
                 height: 40,
                 child: CircularProgressIndicator(

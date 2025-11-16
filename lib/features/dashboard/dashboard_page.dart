@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../app/theme/app_theme.dart';
 import '../../shared/utils/helpers.dart';
 import '../../shared/models/transaction.dart';
-import '../../shared/models/org_summary.dart';
 import '../../shared/services/reports_service.dart';
 import '../../widgets/gradient_header.dart';
 import '../../widgets/glass_card.dart';
@@ -21,7 +20,6 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _loading = true;
   String? _error;
   List<Transaction> _recentTransactions = [];
-  List<OrgSummaryStats> _summaryStats = [];
   int _totalTransactions = 0;
   double _totalAmount = 0.0;
   double _totalCommission = 0.0;
@@ -78,7 +76,7 @@ class _DashboardPageState extends State<DashboardPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Padding(
-        padding: EdgeInsets.all(AppSpacing.md),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -100,7 +98,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
             ),
 
-            SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.md),
 
             Expanded(
               child: _loading
@@ -123,19 +121,19 @@ class _DashboardPageState extends State<DashboardPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.error_outline,
             size: 64,
             color: AppColors.error,
           ),
-          SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.md),
           Text(
             'Error Loading Dashboard',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: AppColors.white,
                 ),
           ),
-          SizedBox(height: AppSpacing.xs),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             _error!,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -143,7 +141,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
             textAlign: TextAlign.center,
           ),
-          SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.lg),
           ElevatedButton(
             onPressed: _load,
             child: const Text('Retry'),
@@ -164,7 +162,7 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
         ),
 
-        SizedBox(height: AppSpacing.sm),
+        const SizedBox(height: AppSpacing.sm),
 
         StatsCard(
           label: 'Total Transactions',
@@ -172,7 +170,7 @@ class _DashboardPageState extends State<DashboardPage> {
           icon: Icons.receipt_long,
         ),
 
-        SizedBox(height: AppSpacing.sm),
+        const SizedBox(height: AppSpacing.sm),
 
         StatsCard(
           label: 'Total Amount',
@@ -180,7 +178,7 @@ class _DashboardPageState extends State<DashboardPage> {
           icon: Icons.account_balance_wallet,
         ),
 
-        SizedBox(height: AppSpacing.sm),
+        const SizedBox(height: AppSpacing.sm),
 
         StatsCard(
           label: 'Total Commission',
@@ -188,7 +186,7 @@ class _DashboardPageState extends State<DashboardPage> {
           icon: Icons.payments,
         ),
 
-        SizedBox(height: AppSpacing.lg),
+        const SizedBox(height: AppSpacing.lg),
 
         // Recent Transactions
         Row(
@@ -213,25 +211,25 @@ class _DashboardPageState extends State<DashboardPage> {
           ],
         ),
 
-        SizedBox(height: AppSpacing.sm),
+        const SizedBox(height: AppSpacing.sm),
 
         if (_recentTransactions.isEmpty)
           GlassCard(
             child: Column(
               children: [
-                Icon(
+                const Icon(
                   Icons.inbox_outlined,
                   size: 48,
                   color: AppColors.textTertiary,
                 ),
-                SizedBox(height: AppSpacing.md),
+                const SizedBox(height: AppSpacing.md),
                 Text(
                   'No Transactions',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: AppColors.white,
                       ),
                 ),
-                SizedBox(height: AppSpacing.xs),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   'No transactions in the last 7 days',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -244,12 +242,12 @@ class _DashboardPageState extends State<DashboardPage> {
         else
           ...(_recentTransactions.take(5).map((transaction) {
             return Padding(
-              padding: EdgeInsets.only(bottom: AppSpacing.sm),
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
               child: _buildTransactionCard(transaction),
             );
           }).toList()),
 
-        SizedBox(height: AppSpacing.lg),
+        const SizedBox(height: AppSpacing.lg),
       ],
     );
   }
@@ -257,7 +255,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildTransactionCard(Transaction transaction) {
     return GlassCard(
       child: Padding(
-        padding: EdgeInsets.all(AppSpacing.md),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -275,7 +273,7 @@ class _DashboardPageState extends State<DashboardPage> {
                               fontWeight: FontWeight.w600,
                             ),
                       ),
-                      SizedBox(height: AppSpacing.xxs),
+                      const SizedBox(height: AppSpacing.xxs),
                       Text(
                         transaction.paymentType,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -289,7 +287,7 @@ class _DashboardPageState extends State<DashboardPage> {
               ],
             ),
 
-            SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: AppSpacing.sm),
 
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
