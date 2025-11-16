@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../shared/http/client.dart';
-import '../home/home_shell.dart';
+import '../../shared/utils/helpers.dart';
+import '../../app/theme/app_theme.dart';
+import '../../app/router/routes.dart';
+import '../../widgets/glass_card.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -11,91 +14,218 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _email = TextEditingController(text: '');
-  final _password = TextEditingController(text: '');
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _loading = false;
-  String? _error;
+  bool _obscurePassword = true;
 
-  bool _isValidEmail(String v) {
-    final s = v.trim();
-    if (s.isEmpty) return false;
-    final re = RegExp(r'^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$', caseSensitive: false);
-    return re.hasMatch(s);
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   Future<void> _submit() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _loading = true);
+
     try {
-      final email = _email.text.trim();
-      final password = _password.text.trim();
-      if (!_isValidEmail(email)) {
-        throw Exception('Please enter a valid email');
-      }
-      if (password.isEmpty) {
-        throw Exception('Please enter your password');
-      }
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
+
       final dio = buildDio();
       final res = await dio.post('/auth/login', data: {
         'email': email,
         'password': password,
       });
-      final data = res.data as Map;
+
+      final data = res.data as Map<String, dynamic>;
       final token = data['token'] as String?;
+
       if (token == null || token.isEmpty) {
-        throw Exception('Invalid login');
+        throw Exception('Invalid login response');
       }
+
+      // Store token
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('token', token);
+
+      // Get user info
       final me = await buildDio(token: token).get('/auth/me');
-      final user = me.data['user'] as Map?;
+      final user = me.data['user'] as Map<String, dynamic>?;
       final role = user?['role'] as String? ?? 'org_admin';
       await prefs.setString('role', role);
+
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const HomeShell()));
+
+      // Navigate to home
+      Navigator.pushReplacementNamed(context, Routes.home);
     } catch (e) {
-      setState(() {
-        if (e is DioException) {
-          _error = e.message;
-        } else {
-          _error = e.toString();
-        }
-      });
+      if (!mounted) return;
+      ErrorHandlers.handleError(context, e);
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('Sign In', style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 24),
-                TextField(controller: _email, decoration: const InputDecoration(labelText: 'Email'), autocorrect: false, enableSuggestions: false, keyboardType: TextInputType.emailAddress),
-                const SizedBox(height: 16),
-                TextField(controller: _password, decoration: const InputDecoration(labelText: 'Password'), obscureText: true, autocorrect: false, enableSuggestions: false),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(onPressed: _loading ? null : _submit, child: _loading ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Login')),
+      backgroundColor: AppColors.background,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.background,
+              AppColors.surfaceLow,
+              AppColors.background,
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(AppSpacing.lg),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // App Logo
+                    Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        gradient: AppGradients.warm(),
+                        borderRadius: BorderRadius.circular(AppRadius.xl),
+                        boxShadow: AppShadows.shadowLg,
+                      ),
+                      child: const Icon(
+                        Icons.account_balance_wallet,
+                        size: 48,
+                        color: Colors.white,
+                      ),
+                    ),
+
+                    SizedBox(height: AppSpacing.xl),
+
+                    // Title
+                    Text(
+                      'Welcome Back',
+                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                            color: AppColors.white,
+                          ),
+                    ),
+
+                    SizedBox(height: AppSpacing.xs),
+
+                    Text(
+                      'Sign in to continue',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                    ),
+
+                    SizedBox(height: AppSpacing.xxl),
+
+                    // Login Form
+                    GlassCard(
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Email Field
+                            TextFormField(
+                              controller: _emailController,
+                              decoration: const InputDecoration(
+                                labelText: 'Email',
+                                prefixIcon: Icon(Icons.email_outlined),
+                              ),
+                              keyboardType: TextInputType.emailAddress,
+                              textInputAction: TextInputAction.next,
+                              autocorrect: false,
+                              enableSuggestions: false,
+                              validator: Validators.email,
+                            ),
+
+                            SizedBox(height: AppSpacing.md),
+
+                            // Password Field
+                            TextFormField(
+                              controller: _passwordController,
+                              decoration: InputDecoration(
+                                labelText: 'Password',
+                                prefixIcon: const Icon(Icons.lock_outlined),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
+                                ),
+                              ),
+                              obscureText: _obscurePassword,
+                              textInputAction: TextInputAction.done,
+                              autocorrect: false,
+                              enableSuggestions: false,
+                              onFieldSubmitted: (_) => _submit(),
+                              validator: (value) => Validators.required(
+                                value,
+                                fieldName: 'Password',
+                              ),
+                            ),
+
+                            SizedBox(height: AppSpacing.lg),
+
+                            // Login Button
+                            SizedBox(
+                              height: 52,
+                              child: ElevatedButton(
+                                onPressed: _loading ? null : _submit,
+                                child: _loading
+                                    ? const SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(
+                                            Colors.black,
+                                          ),
+                                        ),
+                                      )
+                                    : const Text('Sign In'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(height: AppSpacing.lg),
+
+                    // Footer
+                    Text(
+                      'USSD Admin © 2025',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textTertiary,
+                          ),
+                    ),
+                  ],
                 ),
-                if (_error != null) ...[
-                  const SizedBox(height: 12),
-                  Text(_error!, style: const TextStyle(color: Colors.red)),
-                ],
-              ],
+              ),
             ),
           ),
         ),

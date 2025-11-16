@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'app/theme/app_theme.dart';
-import 'features/auth/login_page.dart';
 import 'app/router/app_router.dart' as app_router;
 import 'app/router/routes.dart';
 
@@ -16,9 +15,8 @@ class App extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'USSD Admin',
       theme: buildTheme(),
-      initialRoute: Routes.login,
+      initialRoute: Routes.splash,
       onGenerateRoute: app_router.onGenerateRoute,
-      home: const LoginPage(),
     );
   }
 }

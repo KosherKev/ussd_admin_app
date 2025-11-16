@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../features/auth/splash_page.dart';
 import '../../features/auth/login_page.dart';
 import '../../features/home/home_shell.dart';
 import '../../features/dashboard/dashboard_page.dart';
@@ -18,6 +19,8 @@ import 'routes.dart';
 
 Route<dynamic>? onGenerateRoute(RouteSettings settings) {
   switch (settings.name) {
+    case Routes.splash:
+      return MaterialPageRoute(builder: (_) => const SplashPage());
     case Routes.login:
       return MaterialPageRoute(builder: (_) => const LoginPage());
     case Routes.home:
