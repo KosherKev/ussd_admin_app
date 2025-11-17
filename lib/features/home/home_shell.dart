@@ -11,7 +11,8 @@ import '../dashboard/dashboard_page.dart';
 import '../orgs/org_list_page.dart';
 
 class HomeShell extends StatefulWidget {
-  const HomeShell({super.key});
+  final int initialIndex;
+  const HomeShell({super.key, this.initialIndex = 0});
   @override
   State<HomeShell> createState() => _HomeShellState();
 }
@@ -25,6 +26,7 @@ class _HomeShellState extends State<HomeShell> {
   void initState() {
     super.initState();
     _loadRole();
+    _index = widget.initialIndex;
   }
 
   Future<void> _loadRole() async {

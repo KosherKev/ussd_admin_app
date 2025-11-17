@@ -7,6 +7,7 @@ import '../../shared/models/paged.dart';
 import '../../shared/services/reports_service.dart';
 import '../../shared/services/org_service.dart';
 import '../../shared/models/organization.dart';
+import '../../app/router/routes.dart';
 import '../../widgets/gradient_header.dart';
 import '../../widgets/glass_card.dart';
 
@@ -22,6 +23,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
   bool _loading = true;
   String? _error;
+  String _role = 'org_admin';
 
   List<Organization> _orgs = [];
   Organization? _selectedOrg;
@@ -50,6 +52,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
       _error = null;
     });
     try {
+      _role = await RoleHelpers.getRole();
       final prefs = await SharedPreferences.getInstance();
       final lastId = prefs.getString('last_org_id');
       final lastName = prefs.getString('last_org_name');
@@ -187,76 +190,72 @@ class _TransactionsPageState extends State<TransactionsPage> {
           const SizedBox(height: AppSpacing.md),
 
           GlassCard(
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        initialValue: _selectedOrg?.id,
-                        items: _orgs
-                            .map((o) => DropdownMenuItem<String>(
-                                  value: o.id,
-                                  child: Text(o.name),
-                                ))
-                            .toList(),
-                        onChanged: (id) {
-                          if (id == null) return;
-                          _onSelectOrg(_orgs.firstWhere((o) => o.id == id));
-                        },
-                        decoration: const InputDecoration(
-                          labelText: 'Organization',
-                          prefixIcon: Icon(Icons.business_outlined),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: DropdownButtonFormField<String?>(
-                        initialValue: _status,
-                        items: [
-                          const DropdownMenuItem<String?>(value: null, child: Text('All Statuses')),
-                          ..._statuses.map((s) => DropdownMenuItem<String?>(value: s, child: Text(StatusHelpers.formatStatus(s)))),
-                        ],
-                        onChanged: (value) => setState(() => _status = value),
-                        decoration: const InputDecoration(
-                          labelText: 'Status',
-                          prefixIcon: Icon(Icons.flag_outlined),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _pickStartDate,
-                        icon: const Icon(Icons.calendar_today),
-                        label: Text(_startDate == null ? 'Start Date' : DateFormatters.formatDate(_startDate)),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _pickEndDate,
-                        icon: const Icon(Icons.event),
-                        label: Text(_endDate == null ? 'End Date' : DateFormatters.formatDate(_endDate)),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _fetch(page: 1),
-                    icon: const Icon(Icons.search),
-                    label: const Text('Apply Filters'),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final twoCol = constraints.maxWidth >= 560;
+                final orgDropdown = DropdownButtonFormField<String>(
+                  initialValue: _selectedOrg?.id,
+                  items: _orgs
+                      .map((o) => DropdownMenuItem<String>(
+                            value: o.id,
+                            child: Text(o.name, overflow: TextOverflow.ellipsis),
+                          ))
+                      .toList(),
+                  onChanged: (id) {
+                    if (id == null) return;
+                    _onSelectOrg(_orgs.firstWhere((o) => o.id == id));
+                  },
+                  decoration: const InputDecoration(
+                    labelText: 'Organization',
+                    prefixIcon: Icon(Icons.business_outlined),
                   ),
-                ),
-              ],
+                );
+                final statusDropdown = DropdownButtonFormField<String?>(
+                  initialValue: _status,
+                  items: [
+                    const DropdownMenuItem<String?>(value: null, child: Text('All Statuses')),
+                    ..._statuses.map((s) => DropdownMenuItem<String?>(value: s, child: Text(StatusHelpers.formatStatus(s)))),
+                  ],
+                  onChanged: (value) => setState(() => _status = value),
+                  decoration: const InputDecoration(
+                    labelText: 'Status',
+                    prefixIcon: Icon(Icons.flag_outlined),
+                  ),
+                );
+                final startBtn = OutlinedButton.icon(
+                  onPressed: _pickStartDate,
+                  icon: const Icon(Icons.calendar_today),
+                  label: Text(_startDate == null ? 'Start Date' : DateFormatters.formatDate(_startDate)),
+                );
+                final endBtn = OutlinedButton.icon(
+                  onPressed: _pickEndDate,
+                  icon: const Icon(Icons.event),
+                  label: Text(_endDate == null ? 'End Date' : DateFormatters.formatDate(_endDate)),
+                );
+
+                return Column(
+                  children: [
+                    if (twoCol)
+                      Row(children: [Expanded(child: orgDropdown), const SizedBox(width: AppSpacing.sm), Expanded(child: statusDropdown)])
+                    else
+                      Column(children: [orgDropdown, const SizedBox(height: AppSpacing.sm), statusDropdown]),
+                    const SizedBox(height: AppSpacing.sm),
+                    if (twoCol)
+                      Row(children: [Expanded(child: startBtn), const SizedBox(width: AppSpacing.sm), Expanded(child: endBtn)])
+                    else
+                      Column(children: [startBtn, const SizedBox(height: AppSpacing.sm), endBtn]),
+                    const SizedBox(height: AppSpacing.sm),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _fetch(page: 1),
+                        icon: const Icon(Icons.search),
+                        label: const Text('Apply Filters'),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
 
@@ -336,6 +335,43 @@ class _TransactionsPageState extends State<TransactionsPage> {
             ),
           ],
         ]),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 3,
+        onTap: (i) => Navigator.pushReplacementNamed(context, Routes.home, arguments: i),
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: AppColors.surfaceLow,
+        selectedItemColor: AppColors.primaryAmber,
+        unselectedItemColor: AppColors.textSecondary,
+        elevation: 8,
+        items: [
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard_outlined),
+            activeIcon: Icon(Icons.dashboard),
+            label: 'Dashboard',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.business_outlined),
+            activeIcon: Icon(Icons.business),
+            label: 'Organizations',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.payment_outlined),
+            activeIcon: Icon(Icons.payment),
+            label: 'Payments',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.bar_chart_outlined),
+            activeIcon: Icon(Icons.bar_chart),
+            label: 'Reports',
+          ),
+          if (_role == 'super_admin')
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.admin_panel_settings_outlined),
+              activeIcon: Icon(Icons.admin_panel_settings),
+              label: 'Admin',
+            ),
+        ],
       ),
     );
   }

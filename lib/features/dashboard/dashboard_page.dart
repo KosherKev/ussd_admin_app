@@ -6,6 +6,7 @@ import '../../shared/services/reports_service.dart';
 import '../../widgets/gradient_header.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/stats_card.dart';
+import '../../app/router/routes.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -248,13 +249,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
             ),
             TextButton(
-              onPressed: () {
-                // Navigate to full transactions report
-                DialogHelpers.showInfo(
-                  context,
-                  'Full reports coming soon',
-                );
-              },
+              onPressed: () => Navigator.pushNamed(context, Routes.reportsTransactions),
               child: const Text('View All'),
             ),
           ],

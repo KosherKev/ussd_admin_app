@@ -6,6 +6,7 @@ import '../../shared/models/ussd_session_stats.dart';
 import '../../widgets/gradient_header.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/stats_card.dart';
+import '../../app/router/routes.dart';
 
 class UssdSessionsPage extends StatefulWidget {
   const UssdSessionsPage({super.key});
@@ -241,6 +242,43 @@ class _UssdSessionsPageState extends State<UssdSessionsPage> {
                       ),
           ),
         ]),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 3,
+        onTap: (i) => Navigator.pushReplacementNamed(context, Routes.home, arguments: i),
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: AppColors.surfaceLow,
+        selectedItemColor: AppColors.primaryAmber,
+        unselectedItemColor: AppColors.textSecondary,
+        elevation: 8,
+        items: [
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard_outlined),
+            activeIcon: Icon(Icons.dashboard),
+            label: 'Dashboard',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.business_outlined),
+            activeIcon: Icon(Icons.business),
+            label: 'Organizations',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.payment_outlined),
+            activeIcon: Icon(Icons.payment),
+            label: 'Payments',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.bar_chart_outlined),
+            activeIcon: Icon(Icons.bar_chart),
+            label: 'Reports',
+          ),
+          if (_role == 'super_admin')
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.admin_panel_settings_outlined),
+              activeIcon: Icon(Icons.admin_panel_settings),
+              label: 'Admin',
+            ),
+        ],
       ),
     );
   }

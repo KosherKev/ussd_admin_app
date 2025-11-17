@@ -24,7 +24,8 @@ Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     case Routes.login:
       return MaterialPageRoute(builder: (_) => const LoginPage());
     case Routes.home:
-      return MaterialPageRoute(builder: (_) => const HomeShell());
+      final initialIndex = settings.arguments is int ? settings.arguments as int : 0;
+      return MaterialPageRoute(builder: (_) => HomeShell(initialIndex: initialIndex));
     case Routes.dashboard:
       return MaterialPageRoute(builder: (_) => const DashboardPage());
     case Routes.orgs:
