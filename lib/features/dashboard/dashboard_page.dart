@@ -99,8 +99,11 @@ class _DashboardPageState extends State<DashboardPage> {
             GradientHeader(
               title: 'Dashboard',
               warm: true,
-              trailing: _loading
-                  ? const SizedBox(
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_loading)
+                    const SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
@@ -108,10 +111,18 @@ class _DashboardPageState extends State<DashboardPage> {
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : IconButton(
+                  else
+                    IconButton(
                       icon: const Icon(Icons.refresh, color: Colors.white),
                       onPressed: _load,
                     ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.account_circle, color: Colors.white),
+                    onPressed: () => Navigator.pushNamed(context, Routes.settingsProfile),
+                  ),
+                ],
+              ),
             ),
 
             const SizedBox(height: AppSpacing.md),
