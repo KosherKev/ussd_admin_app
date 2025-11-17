@@ -7,6 +7,7 @@ import '../../widgets/gradient_header.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/stats_card.dart';
 import '../../app/router/routes.dart';
+import 'package:flutter/services.dart';
 
 class OrgSummaryPage extends StatefulWidget {
   final String orgId;
@@ -108,7 +109,13 @@ class _OrgSummaryPageState extends State<OrgSummaryPage> {
       body: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const GradientHeader(title: 'Org Summary'),
+          GradientHeader(
+            title: 'Org Summary',
+            trailing: IconButton(
+              icon: const Icon(Icons.file_download, color: Colors.white),
+              onPressed: _exportCsv,
+            ),
+          ),
           const SizedBox(height: AppSpacing.md),
           GlassCard(
             child: Column(
@@ -270,5 +277,26 @@ class _OrgSummaryPageState extends State<OrgSummaryPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _exportCsv() async {
+    if (_stats.isEmpty) {
+      DialogHelpers.showInfo(context, 'No data to export');
+      return;
+    }
+    final header = ['Payment Type', 'Count', 'Total Amount'];
+    final buffer = StringBuffer();
+    buffer.writeln(header.join(','));
+    for (final s in _stats) {
+      final row = [
+        s.paymentTypeName,
+        CurrencyFormatters.formatNumber(s.count),
+        CurrencyFormatters.formatGHS(s.totalAmount),
+      ];
+      buffer.writeln(row.map((v) => '"${v.toString().replaceAll('"', '""')}"').join(','));
+    }
+    await Clipboard.setData(ClipboardData(text: buffer.toString()));
+    if (!mounted) return;
+    DialogHelpers.showSuccess(context, 'CSV copied to clipboard');
   }
 }

@@ -7,6 +7,7 @@ import '../../widgets/gradient_header.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/stats_card.dart';
 import '../../app/router/routes.dart';
+import 'package:flutter/services.dart';
 
 class UssdSessionsPage extends StatefulWidget {
   const UssdSessionsPage({super.key});
@@ -115,7 +116,13 @@ class _UssdSessionsPageState extends State<UssdSessionsPage> {
       body: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const GradientHeader(title: 'USSD Sessions'),
+          GradientHeader(
+            title: 'USSD Sessions',
+            trailing: IconButton(
+              icon: const Icon(Icons.file_download, color: Colors.white),
+              onPressed: _exportCsv,
+            ),
+          ),
           const SizedBox(height: AppSpacing.md),
           GlassCard(
             child: Column(
@@ -281,5 +288,27 @@ class _UssdSessionsPageState extends State<UssdSessionsPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _exportCsv() async {
+    if (_stats.isEmpty) {
+      if (!mounted) return;
+      DialogHelpers.showInfo(context, 'No data to export');
+      return;
+    }
+    final header = ['Status', 'Count', 'Avg Duration (s)'];
+    final buffer = StringBuffer();
+    buffer.writeln(header.join(','));
+    for (final s in _stats) {
+      final row = [
+        StatusHelpers.formatStatus(s.status),
+        CurrencyFormatters.formatNumber(s.count),
+        s.avgDuration.toStringAsFixed(1),
+      ];
+      buffer.writeln(row.map((v) => '"${v.toString().replaceAll('"', '""')}"').join(','));
+    }
+    await Clipboard.setData(ClipboardData(text: buffer.toString()));
+    if (!mounted) return;
+    DialogHelpers.showSuccess(context, 'CSV copied to clipboard');
   }
 }

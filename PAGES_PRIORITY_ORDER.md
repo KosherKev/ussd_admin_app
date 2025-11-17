@@ -221,7 +221,7 @@
 
 #### Priority 12: PayoutsSchedulePage (3-4 hours) ⭐
 **File:** `lib/features/payouts/payouts_schedule_page.dart`  
-**Status:** Placeholder only  
+**Status:** Completed  
 **Why Twelfth:** Super admin feature
 
 **Features:**
@@ -239,7 +239,7 @@
 
 #### Priority 13: PayoutsPendingPage (4-5 hours) ⭐
 **File:** `lib/features/payouts/payouts_pending_page.dart`  
-**Status:** Placeholder only  
+**Status:** Completed  
 **Why Thirteenth:** Super admin payout processing
 
 **Features:**
@@ -257,7 +257,7 @@
 
 #### Priority 14: ProfilePage (2-3 hours) ⭐
 **File:** `lib/features/settings/profile_page.dart`  
-**Status:** Placeholder only  
+**Status:** Completed  
 **Why Last:** Lower priority, simple page
 
 **Features:**
@@ -268,6 +268,26 @@
 
 **Dependencies:** None (uses /auth/me)  
 **API Calls:** GET /api/auth/me
+
+---
+
+### **PHASE 5: Polish & Exports (Week 5 - 6 hours)**
+
+#### Priority 15: CSV Export on Reports Pages (6 hours) ⭐⭐
+**Files:**
+- `lib/features/reports/transactions_page.dart`
+- `lib/features/reports/org_summary_page.dart`
+- `lib/features/reports/ussd_sessions_page.dart`
+
+**Status:** Completed  
+**Features:**
+- Export current filtered results to CSV and copy to clipboard
+- Transactions: org, type, status, amount, date, reference
+- Org Summary: type name, count, total amount
+- USSD Sessions: status, count, average duration
+
+**Dependencies:** None (uses Clipboard)
+**API Calls:** None
 
 ---
 

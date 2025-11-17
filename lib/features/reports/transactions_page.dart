@@ -10,6 +10,7 @@ import '../../shared/models/organization.dart';
 import '../../app/router/routes.dart';
 import '../../widgets/gradient_header.dart';
 import '../../widgets/glass_card.dart';
+import 'package:flutter/services.dart';
 
 class TransactionsPage extends StatefulWidget {
   const TransactionsPage({super.key});
@@ -172,8 +173,11 @@ class _TransactionsPageState extends State<TransactionsPage> {
           GradientHeader(
             title: 'Transactions',
             warm: true,
-            trailing: _loading
-                ? const SizedBox(
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_loading)
+                  const SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
@@ -181,10 +185,18 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
-                : IconButton(
+                else
+                  IconButton(
                     icon: const Icon(Icons.refresh, color: Colors.white),
                     onPressed: () => _fetch(page: _paged?.page ?? 1),
                   ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.file_download, color: Colors.white),
+                  onPressed: _exportCsv,
+                ),
+              ],
+            ),
           ),
 
           const SizedBox(height: AppSpacing.md),
@@ -443,5 +455,30 @@ class _TransactionsPageState extends State<TransactionsPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _exportCsv() async {
+    final items = _paged?.items ?? [];
+    if (items.isEmpty) {
+      DialogHelpers.showInfo(context, 'No transactions to export');
+      return;
+    }
+    final header = ['Organization', 'Payment Type', 'Status', 'Amount', 'Date', 'Reference'];
+    final rows = items.map((t) => [
+          t.organizationName,
+          t.paymentType,
+          t.status,
+          CurrencyFormatters.formatGHS(t.amount),
+          DateFormatters.formatDateTime(t.initiatedAt),
+          t.transactionRef,
+        ]);
+    final buffer = StringBuffer();
+    buffer.writeln(header.join(','));
+    for (final r in rows) {
+      buffer.writeln(r.map((v) => '"${v.toString().replaceAll('"', '""')}"').join(','));
+    }
+    await Clipboard.setData(ClipboardData(text: buffer.toString()));
+    if (!mounted) return;
+    DialogHelpers.showSuccess(context, 'CSV copied to clipboard');
   }
 }

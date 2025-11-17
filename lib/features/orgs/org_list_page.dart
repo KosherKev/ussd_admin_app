@@ -271,11 +271,14 @@ class _BodyState extends State<_Body> {
                                                           color: AppColors.textSecondary,
                                                         ),
                                                         const SizedBox(width: AppSpacing.xxs),
-                                                        Text(
-                                                          org.phone!,
-                                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                                                color: AppColors.textSecondary,
-                                                              ),
+                                                        Expanded(
+                                                          child: Text(
+                                                            org.phone!,
+                                                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                                  color: AppColors.textSecondary,
+                                                                ),
+                                                            overflow: TextOverflow.ellipsis,
+                                                          ),
                                                         ),
                                                       ],
                                                     ),
