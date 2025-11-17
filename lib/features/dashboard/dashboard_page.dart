@@ -3,6 +3,9 @@ import '../../app/theme/app_theme.dart';
 import '../../shared/utils/helpers.dart';
 import '../../shared/models/transaction.dart';
 import '../../shared/services/reports_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../shared/services/org_service.dart';
+import '../../shared/models/organization.dart';
 import '../../widgets/gradient_header.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/stats_card.dart';
@@ -17,9 +20,11 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   final _reportsService = ReportsService();
+  final _orgService = OrgService();
   
   bool _loading = true;
   String? _error;
+  String _role = 'org_admin';
   List<Transaction> _recentTransactions = [];
   int _totalTransactions = 0;
   double _totalAmount = 0.0;
@@ -27,6 +32,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Map<DateTime, int> _dailyCounts = {};
   Map<String, int> _typeCounts = {};
   Map<String, double> _typeAmounts = {};
+  Organization? _selectedOrg;
 
   @override
   void initState() {
@@ -41,8 +47,30 @@ class _DashboardPageState extends State<DashboardPage> {
     });
 
     try {
-      // Get recent transactions (last 7 days)
+      _role = await RoleHelpers.getRole();
+      String? organizationId;
+      if (_role != 'super_admin') {
+        final prefs = await SharedPreferences.getInstance();
+        final lastId = prefs.getString('last_org_id');
+        final lastName = prefs.getString('last_org_name');
+        Organization? last;
+        if (lastId != null && lastName != null) {
+          last = Organization(id: lastId, name: lastName);
+        }
+        final orgsResult = await _orgService.list(page: 1, limit: 100);
+        final orgs = orgsResult.items;
+        if (orgs.isEmpty) {
+          throw Exception('No organization available');
+        }
+        _selectedOrg = orgs.firstWhere(
+          (o) => o.id == last?.id,
+          orElse: () => orgs.first,
+        );
+        organizationId = _selectedOrg?.id;
+      }
+
       final transactionsResult = await _reportsService.getTransactions(
+        organizationId: organizationId,
         startDate: DateFormatters.sevenDaysAgo,
         endDate: DateTime.now(),
         page: 1,
@@ -97,7 +125,9 @@ class _DashboardPageState extends State<DashboardPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             GradientHeader(
-              title: 'Dashboard',
+              title: (_role != 'super_admin' && _selectedOrg != null)
+                  ? 'Dashboard — ${_selectedOrg!.name}'
+                  : 'Dashboard',
               warm: true,
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,

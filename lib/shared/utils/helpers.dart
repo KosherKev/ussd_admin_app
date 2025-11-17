@@ -487,6 +487,15 @@ class ErrorHandlers {
       if (error.toString().contains('500')) {
         return 'Server error. Please try again later.';
       }
+      if (error.toString().contains('502')) {
+        return 'Bad gateway. Please try again later.';
+      }
+      if (error.toString().contains('503')) {
+        return 'Service unavailable. Please try again later.';
+      }
+      if (error.toString().contains('504')) {
+        return 'Gateway timeout. Please try again later.';
+      }
     }
     
     // Try to extract message from error

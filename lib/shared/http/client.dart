@@ -5,12 +5,12 @@ import 'package:uuid/uuid.dart';
 const _port = 5005;
 
 String baseUrl() {
-  if (kIsWeb) return 'http://localhost:$_port/api';
+  if (kIsWeb) return 'https://ussd-service-api-165745695590.europe-west1.run.app:$_port/api';
   switch (defaultTargetPlatform) {
     case TargetPlatform.android:
-      return 'http://10.0.2.2:$_port/api';
+      return 'https://ussd-service-api-165745695590.europe-west1.run.app/api';
     default:
-      return 'http://localhost:$_port/api';
+      return 'https://ussd-service-api-165745695590.europe-west1.run.app/api';
   }
 }
 

@@ -6,6 +6,8 @@ import '../../widgets/gradient_header.dart';
 import '../../widgets/glass_card.dart';
 import '../../shared/http/client.dart';
 import '../../shared/utils/helpers.dart';
+import '../../shared/services/org_service.dart';
+import '../../shared/models/organization.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -38,10 +40,25 @@ class _ProfilePageState extends State<ProfilePage> {
       final res = await dio.get('/auth/me');
       final user = res.data['user'] as Map<String, dynamic>?
           ?? res.data as Map<String, dynamic>?;
+
+      String? orgName = user?['organization']?['name']?.toString();
+      final orgId = user?['organizationId']?.toString();
+
+      if ((orgName == null || orgName.isEmpty) && orgId != null && orgId.isNotEmpty) {
+        final orgsResult = await OrgService().list(page: 1, limit: 100);
+        final match = orgsResult.items.firstWhere(
+          (o) => o.id == orgId,
+          orElse: () => Organization(id: orgId, name: ''),
+        );
+        if (match.name.isNotEmpty) {
+          orgName = match.name;
+        }
+      }
+
       setState(() {
         _email = user?['email']?.toString();
         _role = user?['role']?.toString();
-        _orgName = user?['organization']?['name']?.toString();
+        _orgName = (orgName != null && orgName.isNotEmpty) ? orgName : null;
         _loading = false;
       });
     } catch (e) {

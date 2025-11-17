@@ -5,6 +5,7 @@ import '../../shared/utils/helpers.dart';
 import '../../app/theme/app_theme.dart';
 import '../../app/router/routes.dart';
 import '../../widgets/glass_card.dart';
+import 'package:dio/dio.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -64,7 +65,28 @@ class _LoginPageState extends State<LoginPage> {
       Navigator.pushReplacementNamed(context, Routes.home);
     } catch (e) {
       if (!mounted) return;
-      ErrorHandlers.handleError(context, e);
+      String message = ErrorHandlers.getErrorMessage(e);
+      if (e is DioException) {
+        final code = e.response?.statusCode ?? 0;
+        final data = e.response?.data;
+        final serverMessage = (data is Map && data['message'] is String) ? (data['message'] as String) : null;
+        if (code == 401) {
+          message = serverMessage ?? 'Invalid email or password.';
+        } else if (code == 400) {
+          message = serverMessage ?? 'Invalid request. Please check your input.';
+        } else if (code == 403) {
+          message = serverMessage ?? 'Access denied for this account.';
+        } else if (code == 502) {
+          message = serverMessage ?? 'Bad gateway. Please try again later.';
+        } else if (code == 503) {
+          message = serverMessage ?? 'Service unavailable. Please try again later.';
+        } else if (code == 504) {
+          message = serverMessage ?? 'Gateway timeout. Please try again later.';
+        } else if (serverMessage != null && serverMessage.isNotEmpty) {
+          message = serverMessage;
+        }
+      }
+      DialogHelpers.showError(context, message);
     } finally {
       if (mounted) {
         setState(() => _loading = false);
