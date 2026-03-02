@@ -1,26 +1,49 @@
 import 'package:flutter/material.dart';
+import '../app/theme/app_theme.dart';
 
+/// Gradient header bar used at the top of each tab page.
 class GradientHeader extends StatelessWidget {
   final String title;
-  final bool warm;
   final Widget? trailing;
-  const GradientHeader({super.key, required this.title, this.warm = true, this.trailing});
+  final Widget? leading;
+  final bool warm;
+
+  const GradientHeader({
+    super.key,
+    required this.title,
+    this.trailing,
+    this.leading,
+    this.warm = true,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final colors = warm
-        ? [const Color(0xFFC89B5E), const Color(0xFF8A5A2B)]
-        : [const Color(0xFF3A5F78), const Color(0xFF1F2E3A)];
+    final c = context.appColors;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight),
-        borderRadius: BorderRadius.circular(28),
+        gradient: AppGradients.warm(colors: c),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
       ),
       child: Row(
         children: [
+          if (leading != null) ...[
+            leading!,
+            const SizedBox(width: AppSpacing.sm),
+          ],
           Expanded(
-            child: Text(title, style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white)),
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
           if (trailing != null) trailing!,
         ],

@@ -9,12 +9,12 @@ import '../../widgets/glass_card.dart';
 
 class PaymentTypeEditPage extends StatefulWidget {
   final String orgId;
-  final String typeId;
+  final String? typeId;  // null = create new
 
   const PaymentTypeEditPage({
     super.key,
     required this.orgId,
-    required this.typeId,
+    this.typeId,
   });
 
   @override
@@ -36,7 +36,7 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
   bool _loading = true;
   bool _saving = false;
 
-  bool get _isNewType => widget.typeId == 'new';
+  bool get _isNewType => widget.typeId == null;
 
   @override
   void initState() {
@@ -122,7 +122,7 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
         // Update existing payment type
         await _service.update(
           widget.orgId,
-          widget.typeId,
+          widget.typeId!,   // safe: not reached when typeId==null (_isNewType guard above)
           {
             'name': _nameController.text.trim(),
             'description': _descriptionController.text.trim().isEmpty
@@ -152,15 +152,16 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.appColors;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
       appBar: AppBar(
         title: Text(_isNewType ? 'Add Payment Type' : 'Edit Payment Type'),
-        backgroundColor: AppColors.background,
+        backgroundColor: c.background,
         elevation: 0,
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator(color: c.primaryAmber))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Form(
@@ -191,7 +192,7 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
                             Text(
                               'Unique identifier for this payment type (e.g., "tithe", "offering")',
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppColors.textSecondary,
+                                    color: c.textSecondary,
                                   ),
                             ),
                             const SizedBox(height: AppSpacing.md),
@@ -267,7 +268,7 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
                           Container(
                             padding: const EdgeInsets.all(AppSpacing.md),
                             decoration: BoxDecoration(
-                              color: AppColors.surfaceLow,
+                              color: c.surfaceMid,
                               borderRadius: BorderRadius.circular(AppRadius.md),
                             ),
                             child: Row(
@@ -276,13 +277,12 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
                                   width: 40,
                                   height: 40,
                                   decoration: BoxDecoration(
-                                    color: (_enabled ? AppColors.success : AppColors.gray600)
-                                        .withValues(alpha: 0.1),
+                                    color: (_enabled ? c.success : c.textTertiary).withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(AppRadius.sm),
                                   ),
                                   child: Icon(
-                                    _enabled ? Icons.check_circle : Icons.cancel,
-                                    color: _enabled ? AppColors.success : AppColors.gray600,
+                                    _enabled ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                                    color: _enabled ? c.success : c.textTertiary,
                                     size: 24,
                                   ),
                                 ),
@@ -293,27 +293,21 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
                                     children: [
                                       Text(
                                         'Enable Payment Type',
-                                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                              color: AppColors.white,
-                                            ),
+                                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: c.textPrimary),
                                       ),
                                       const SizedBox(height: AppSpacing.xxs),
                                       Text(
                                         _enabled
                                             ? 'Users can make payments using this type'
                                             : 'This payment type is disabled',
-                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                              color: AppColors.textSecondary,
-                                            ),
+                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: c.textSecondary),
                                       ),
                                     ],
                                   ),
                                 ),
                                 Switch(
                                   value: _enabled,
-                                  onChanged: (value) {
-                                    setState(() => _enabled = value);
-                                  },
+                                  onChanged: (value) => setState(() => _enabled = value),
                                 ),
                               ],
                             ),
@@ -339,7 +333,7 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
                           Text(
                             'Set minimum and maximum payment amounts in GHS',
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: AppColors.textSecondary,
+                                  color: c.textSecondary,
                                 ),
                           ),
                           const SizedBox(height: AppSpacing.md),

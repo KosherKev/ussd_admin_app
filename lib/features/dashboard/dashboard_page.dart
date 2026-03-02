@@ -1,38 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../app/theme/app_theme.dart';
+import '../../app/router/routes.dart';
 import '../../shared/utils/helpers.dart';
 import '../../shared/models/transaction.dart';
 import '../../shared/services/reports_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../shared/services/org_service.dart';
-import '../../shared/models/organization.dart';
 import '../../widgets/gradient_header.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/stats_card.dart';
-import '../../app/router/routes.dart';
+import '../home/home_shell.dart';
 
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
-  
+  final String orgId;
+  const DashboardPage({super.key, required this.orgId});
+
   @override
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
 class _DashboardPageState extends State<DashboardPage> {
   final _reportsService = ReportsService();
-  final _orgService = OrgService();
-  
-  bool _loading = true;
-  String? _error;
-  String _role = 'org_admin';
-  List<Transaction> _recentTransactions = [];
-  int _totalTransactions = 0;
-  double _totalAmount = 0.0;
-  double _totalCommission = 0.0;
-  Map<DateTime, int> _dailyCounts = {};
-  Map<String, int> _typeCounts = {};
-  Map<String, double> _typeAmounts = {};
-  Organization? _selectedOrg;
+
+  bool             _loading = true;
+  String?          _error;
+  String?          _orgName;
+  List<Transaction> _recent = [];
+  int              _totalTxns    = 0;
+  double           _totalAmount  = 0;
+  double           _totalComm    = 0;
+  Map<DateTime,int> _dailyCounts = {};
+  Map<String, int>  _typeCounts  = {};
+  Map<String,double>_typeAmounts = {};
+
+  // subscription banner
+  int?  _daysUntilExpiry;
+  bool  _subLoaded = false;
 
   @override
   void initState() {
@@ -41,131 +43,84 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-
+    setState(() { _loading = true; _error = null; });
     try {
-      _role = await RoleHelpers.getRole();
-      String? organizationId;
-      if (_role != 'super_admin') {
-        final prefs = await SharedPreferences.getInstance();
-        final lastId = prefs.getString('last_org_id');
-        final lastName = prefs.getString('last_org_name');
-        Organization? last;
-        if (lastId != null && lastName != null) {
-          last = Organization(id: lastId, name: lastName);
-        }
-        final orgsResult = await _orgService.list(page: 1, limit: 100);
-        final orgs = orgsResult.items;
-        if (orgs.isEmpty) {
-          throw Exception('No organization available');
-        }
-        _selectedOrg = orgs.firstWhere(
-          (o) => o.id == last?.id,
-          orElse: () => orgs.first,
-        );
-        organizationId = _selectedOrg?.id;
-      }
+      final prefs = await SharedPreferences.getInstance();
+      _orgName = prefs.getString('org_name');
 
-      final transactionsResult = await _reportsService.getTransactions(
-        organizationId: organizationId,
+      final result = await _reportsService.getTransactions(
+        organizationId: widget.orgId.isNotEmpty ? widget.orgId : null,
         startDate: DateFormatters.sevenDaysAgo,
-        endDate: DateTime.now(),
-        page: 1,
-        limit: 10,
+        endDate:   DateTime.now(),
+        page: 1, limit: 10,
       );
 
-      _recentTransactions = transactionsResult.items;
-      _totalTransactions = transactionsResult.total;
+      _recent        = result.items;
+      _totalTxns     = result.total;
+      _totalAmount   = _recent.fold(0.0, (s, t) => s + t.amount);
+      _totalComm     = _recent.fold(0.0, (s, t) => s + t.commission);
+      _dailyCounts   = _buildDailyCounts(_recent);
 
-      // Calculate totals
-      _totalAmount = _recentTransactions.fold(
-        0.0,
-        (sum, t) => sum + t.amount,
-      );
-      _totalCommission = _recentTransactions.fold(
-        0.0,
-        (sum, t) => sum + t.commission,
-      );
-
-      // Build daily buckets for last 7 days
-      _dailyCounts = _generateDailyCounts(_recentTransactions);
-      // Build payment type breakdown
-      final breakdownCounts = <String, int>{};
-      final breakdownAmounts = <String, double>{};
-      for (final t in _recentTransactions) {
-        breakdownCounts[t.paymentType] = (breakdownCounts[t.paymentType] ?? 0) + 1;
-        breakdownAmounts[t.paymentType] = (breakdownAmounts[t.paymentType] ?? 0.0) + t.amount;
+      final bCounts  = <String, int>{};
+      final bAmounts = <String, double>{};
+      for (final t in _recent) {
+        bCounts[t.paymentType]  = (bCounts[t.paymentType]  ?? 0) + 1;
+        bAmounts[t.paymentType] = (bAmounts[t.paymentType] ?? 0) + t.amount;
       }
-      _typeCounts = breakdownCounts;
-      _typeAmounts = breakdownAmounts;
+      _typeCounts  = bCounts;
+      _typeAmounts = bAmounts;
 
-      if (mounted) {
-        setState(() => _loading = false);
-      }
+      if (mounted) setState(() => _loading = false);
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = ErrorHandlers.getErrorMessage(e);
-          _loading = false;
-        });
-      }
+      if (mounted) setState(() { _error = ErrorHandlers.getErrorMessage(e); _loading = false; });
     }
+  }
+
+  Map<DateTime, int> _buildDailyCounts(List<Transaction> txs) {
+    final now  = DateTime.now();
+    final days = List.generate(7, (i) => DateTime(now.year, now.month, now.day).subtract(Duration(days: 6 - i)));
+    final map  = {for (final d in days) d: 0};
+    for (final t in txs) {
+      final d = DateTime(t.initiatedAt.year, t.initiatedAt.month, t.initiatedAt.day);
+      if (map.containsKey(d)) map[d] = (map[d] ?? 0) + 1;
+    }
+    return map;
   }
 
   @override
   Widget build(BuildContext context) {
+    final c = context.appColors;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
       body: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, 0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             GradientHeader(
-              title: (_role != 'super_admin' && _selectedOrg != null)
-                  ? 'Dashboard — ${_selectedOrg!.name}'
-                  : 'Dashboard',
-              warm: true,
+              title: _orgName != null ? 'Dashboard' : 'Dashboard',
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (_loading)
-                    const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
+                    SizedBox(width: 20, height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)))
                   else
-                    IconButton(
-                      icon: const Icon(Icons.refresh, color: Colors.white),
-                      onPressed: _load,
-                    ),
-                  const SizedBox(width: 8),
+                    IconButton(icon: const Icon(Icons.refresh, color: Colors.white), onPressed: _load),
                   IconButton(
-                    icon: const Icon(Icons.account_circle, color: Colors.white),
+                    icon: const Icon(Icons.account_circle_outlined, color: Colors.white),
                     onPressed: () => Navigator.pushNamed(context, Routes.settingsProfile),
                   ),
                 ],
               ),
             ),
-
             const SizedBox(height: AppSpacing.md),
-
             Expanded(
               child: _loading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? Center(child: CircularProgressIndicator(color: c.primaryAmber))
                   : _error != null
-                      ? _buildError()
-                      : RefreshIndicator(
-                          onRefresh: _load,
-                          child: _buildContent(),
-                        ),
+                      ? _buildError(c)
+                      : RefreshIndicator(onRefresh: _load, child: _buildContent(c)),
             ),
           ],
         ),
@@ -173,368 +128,147 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildError() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildError(AppColors c) => Center(
+    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+      Icon(Icons.error_outline, size: 56, color: c.error),
+      const SizedBox(height: AppSpacing.md),
+      Text('Failed to load dashboard', style: Theme.of(context).textTheme.titleSmall?.copyWith(color: c.textPrimary)),
+      const SizedBox(height: AppSpacing.xs),
+      Text(_error!, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: c.textSecondary), textAlign: TextAlign.center),
+      const SizedBox(height: AppSpacing.lg),
+      ElevatedButton(onPressed: _load, child: const Text('Retry')),
+    ]),
+  );
+
+  Widget _buildContent(AppColors c) => ListView(
+    children: [
+      // Stats row
+      Text('Last 7 Days', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: c.textSecondary)),
+      const SizedBox(height: AppSpacing.sm),
+      StatsCard(label: 'Transactions',    value: CurrencyFormatters.formatNumber(_totalTxns),   icon: Icons.receipt_long_rounded),
+      const SizedBox(height: AppSpacing.sm),
+      StatsCard(label: 'Total Amount',    value: CurrencyFormatters.formatCompactGHS(_totalAmount), icon: Icons.account_balance_wallet_rounded),
+      const SizedBox(height: AppSpacing.sm),
+      StatsCard(label: 'Total Commission',value: CurrencyFormatters.formatGHS(_totalComm),      icon: Icons.payments_rounded),
+
+      const SizedBox(height: AppSpacing.lg),
+
+      // Weekly chart
+      Text('Weekly Activity', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: c.textSecondary)),
+      const SizedBox(height: AppSpacing.sm),
+      GlassCard(child: Padding(padding: const EdgeInsets.all(AppSpacing.md), child: _buildWeeklyChart(c))),
+
+      const SizedBox(height: AppSpacing.lg),
+
+      // Payment type breakdown
+      if (_typeCounts.isNotEmpty) ...[
+        Text('Payment Types', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: c.textSecondary)),
+        const SizedBox(height: AppSpacing.sm),
+        GlassCard(child: Padding(padding: const EdgeInsets.all(AppSpacing.md), child: _buildTypeBreakdown(c))),
+        const SizedBox(height: AppSpacing.lg),
+      ],
+
+      // Recent transactions
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Icon(
-            Icons.error_outline,
-            size: 64,
-            color: AppColors.error,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            'Error Loading Dashboard',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.white,
-                ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            _error!,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          ElevatedButton(
-            onPressed: _load,
-            child: const Text('Retry'),
+          Text('Recent Transactions', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: c.textSecondary)),
+          TextButton(
+            onPressed: () => Navigator.pushNamed(context, Routes.reportsTransactions),
+            child: const Text('View All'),
           ),
         ],
       ),
-    );
-  }
+      const SizedBox(height: AppSpacing.sm),
 
-  Widget _buildContent() {
-    return ListView(
-      children: [
-        // Stats Cards
-        Text(
-          'Last 7 Days',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: AppColors.white,
-              ),
-        ),
-
-        const SizedBox(height: AppSpacing.sm),
-
-        StatsCard(
-          label: 'Total Transactions',
-          value: CurrencyFormatters.formatNumber(_totalTransactions),
-          icon: Icons.receipt_long,
-        ),
-
-        const SizedBox(height: AppSpacing.sm),
-
-        StatsCard(
-          label: 'Total Amount',
-          value: CurrencyFormatters.formatCompactGHS(_totalAmount),
-          icon: Icons.account_balance_wallet,
-        ),
-
-        const SizedBox(height: AppSpacing.sm),
-
-        StatsCard(
-          label: 'Total Commission',
-          value: CurrencyFormatters.formatGHS(_totalCommission),
-          icon: Icons.payments,
-        ),
-
-        const SizedBox(height: AppSpacing.lg),
-
-        // Weekly Chart
-        Text(
-          'Weekly Activity',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: AppColors.white,
-              ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
+      if (_recent.isEmpty)
         GlassCard(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: _buildWeeklyChart(),
-          ),
-        ),
+          child: Column(children: [
+            Icon(Icons.inbox_outlined, size: 40, color: c.textTertiary),
+            const SizedBox(height: AppSpacing.sm),
+            Text('No transactions yet', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: c.textSecondary)),
+          ]),
+        )
+      else
+        ..._recent.take(5).map((t) => Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+          child: _buildTxnCard(t, c),
+        )),
 
-        const SizedBox(height: AppSpacing.lg),
+      const SizedBox(height: AppSpacing.xxl),
+    ],
+  );
 
-        // Payment Type Breakdown
-        Text(
-          'Payment Type Breakdown',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: AppColors.white,
-              ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        GlassCard(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: _buildPaymentTypeBreakdown(),
-          ),
-        ),
-
-        const SizedBox(height: AppSpacing.lg),
-
-        // Recent Transactions
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Recent Transactions',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.white,
-                  ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pushNamed(context, Routes.reportsTransactions),
-              child: const Text('View All'),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: AppSpacing.sm),
-
-        if (_recentTransactions.isEmpty)
-          GlassCard(
-            child: Column(
-              children: [
-                const Icon(
-                  Icons.inbox_outlined,
-                  size: 48,
-                  color: AppColors.textTertiary,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  'No Transactions',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppColors.white,
-                      ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  'No transactions in the last 7 days',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                ),
-              ],
-            ),
-          )
-        else
-          ...(_recentTransactions.take(5).map((transaction) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-              child: _buildTransactionCard(transaction),
-            );
-          }).toList()),
-
-        const SizedBox(height: AppSpacing.lg),
-      ],
-    );
-  }
-
-  Map<DateTime, int> _generateDailyCounts(List<Transaction> txs) {
-    final now = DateTime.now();
-    final days = List.generate(7, (i) {
-      final d = DateTime(now.year, now.month, now.day).subtract(Duration(days: 6 - i));
-      return d;
-    });
-    final map = {for (final d in days) d: 0};
-    for (final t in txs) {
-      final d = DateTime(t.initiatedAt.year, t.initiatedAt.month, t.initiatedAt.day);
-      if (map.containsKey(d)) {
-        map[d] = (map[d] ?? 0) + 1;
-      }
-    }
-    return map;
-  }
-
-  Widget _buildWeeklyChart() {
-    final entries = _dailyCounts.entries.toList()
-      ..sort((a, b) => a.key.compareTo(b.key));
-    final maxVal = entries.isEmpty ? 0 : entries.map((e) => e.value).reduce((a, b) => a > b ? a : b);
+  Widget _buildWeeklyChart(AppColors c) {
+    final entries = _dailyCounts.entries.toList()..sort((a, b) => a.key.compareTo(b.key));
+    final maxVal  = entries.isEmpty ? 0 : entries.map((e) => e.value).reduce((a, b) => a > b ? a : b);
+    const labels  = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: entries.map((e) {
-        final ratio = maxVal == 0 ? 0.0 : (e.value / maxVal);
-        final height = 100 * ratio + 8; // minimum height
-        final label = _weekdayLabel(e.key.weekday);
+        final ratio  = maxVal == 0 ? 0.0 : (e.value / maxVal);
+        final height = 80 * ratio + 6.0;
+        final label  = labels[(e.key.weekday - 1) % 7];
         return Expanded(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                height: height,
-                decoration: BoxDecoration(
-                  gradient: AppGradients.warm(),
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeOut,
+              height: height,
+              decoration: BoxDecoration(
+                gradient: AppGradients.amber(colors: c),
+                borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                '$label\n${CurrencyFormatters.formatNumber(e.value)}',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: AppSpacing.xxs),
+            Text('$label\n${e.value}',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(color: c.textTertiary),
+            ),
+          ]),
         );
       }).toList(),
     );
   }
 
-  String _weekdayLabel(int weekday) {
-    switch (weekday) {
-      case DateTime.monday:
-        return 'Mon';
-      case DateTime.tuesday:
-        return 'Tue';
-      case DateTime.wednesday:
-        return 'Wed';
-      case DateTime.thursday:
-        return 'Thu';
-      case DateTime.friday:
-        return 'Fri';
-      case DateTime.saturday:
-        return 'Sat';
-      case DateTime.sunday:
-        return 'Sun';
-      default:
-        return '';
-    }
-  }
-
-  Widget _buildPaymentTypeBreakdown() {
-    if (_typeCounts.isEmpty) {
-      return Row(
-        children: [
-          const Icon(Icons.inbox_outlined, color: AppColors.textTertiary),
-          const SizedBox(width: AppSpacing.sm),
-          Text(
-            'No data for breakdown',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-          ),
-        ],
-      );
-    }
-    final keys = _typeCounts.keys.toList()
-      ..sort((a, b) => (_typeCounts[b] ?? 0).compareTo(_typeCounts[a] ?? 0));
+  Widget _buildTypeBreakdown(AppColors c) {
+    final keys = _typeCounts.keys.toList()..sort((a, b) => (_typeCounts[b] ?? 0).compareTo(_typeCounts[a] ?? 0));
     return Column(
       children: keys.map((k) {
-        final count = _typeCounts[k] ?? 0;
-        final amount = _typeAmounts[k] ?? 0.0;
+        final count  = _typeCounts[k]  ?? 0;
+        final amount = _typeAmounts[k] ?? 0;
         return Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  k,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.white),
-                ),
-              ),
-              Text(
-                CurrencyFormatters.formatNumber(count),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Text(
-                CurrencyFormatters.formatCompactGHS(amount),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
-              ),
-            ],
-          ),
+          child: Row(children: [
+            Expanded(child: Text(k, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: c.textPrimary))),
+            Text('${CurrencyFormatters.formatNumber(count)} txns',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: c.textSecondary)),
+            const SizedBox(width: AppSpacing.md),
+            Text(CurrencyFormatters.formatCompactGHS(amount),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: c.textSecondary)),
+          ]),
         );
       }).toList(),
     );
   }
 
-  Widget _buildTransactionCard(Transaction transaction) {
-    return GlassCard(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        transaction.organizationName,
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: AppColors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                      ),
-                      const SizedBox(height: AppSpacing.xxs),
-                      Text(
-                        transaction.paymentType,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-                StatusHelpers.buildStatusBadge(transaction.status),
-              ],
-            ),
-
-            const SizedBox(height: AppSpacing.sm),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Amount',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                    ),
-                    Text(
-                      CurrencyFormatters.formatGHS(transaction.amount),
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      DateFormatters.formatRelative(transaction.initiatedAt),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                    ),
-                    Text(
-                      transaction.transactionRef,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textTertiary,
-                            fontFamily: 'monospace',
-                          ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
+  Widget _buildTxnCard(Transaction t, AppColors c) => GlassCard(
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(t.paymentType, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: c.textPrimary, fontWeight: FontWeight.w600)),
+            Text(DateFormatters.formatRelative(t.initiatedAt), style: Theme.of(context).textTheme.bodySmall?.copyWith(color: c.textSecondary)),
+          ])),
+          StatusHelpers.buildStatusBadge(t.status),
+        ],
       ),
-    );
-  }
+      const SizedBox(height: AppSpacing.xs),
+      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Text(CurrencyFormatters.formatGHS(t.amount), style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: c.textPrimary, fontWeight: FontWeight.w700)),
+        Text(t.transactionRef, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: c.textTertiary)),
+      ]),
+    ]),
+  );
 }

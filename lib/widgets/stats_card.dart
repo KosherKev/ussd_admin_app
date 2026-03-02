@@ -1,95 +1,85 @@
 import 'package:flutter/material.dart';
 import '../app/theme/app_theme.dart';
-import 'glass_card.dart';
 
+/// A metric card for displaying a single stat (label + value + icon).
 class StatsCard extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
-  final String? trend;
-  final Color? valueColor;
   final Color? iconColor;
+  final String? subtitle;
+  final Widget? trailing;
 
   const StatsCard({
     super.key,
     required this.label,
     required this.value,
     required this.icon,
-    this.trend,
-    this.valueColor,
     this.iconColor,
+    this.subtitle,
+    this.trailing,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GlassCard(
+    final c = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final effectiveIconColor = iconColor ?? c.primaryAmber;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: c.surfaceLow,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: c.glassBorder, width: 1),
+        boxShadow: AppShadows.sm(isDark),
+      ),
       child: Row(
         children: [
-          // Icon
+          // Icon container with amber gradient
           Container(
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              gradient: AppGradients.warm(),
+              gradient: AppGradients.amber(colors: c),
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
-            child: Icon(
-              icon,
-              color: iconColor ?? Colors.white,
-              size: 24,
-            ),
+            child: Icon(icon, color: Colors.white, size: 22),
           ),
-
           const SizedBox(width: AppSpacing.md),
-
-          // Content
+          // Label + value
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   label,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: c.textSecondary,
+                        fontWeight: FontWeight.w500,
                       ),
                 ),
-                const SizedBox(height: AppSpacing.xxs),
+                const SizedBox(height: 2),
                 Text(
                   value,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: valueColor ?? AppColors.white,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: c.textPrimary,
                         fontWeight: FontWeight.w700,
                       ),
                 ),
-                if (trend != null) ...[
-                  const SizedBox(height: AppSpacing.xxs),
-                  Row(
-                    children: [
-                      Icon(
-                        trend!.startsWith('+')
-                            ? Icons.trending_up
-                            : Icons.trending_down,
-                        size: 14,
-                        color: trend!.startsWith('+')
-                            ? AppColors.success
-                            : AppColors.error,
-                      ),
-                      const SizedBox(width: AppSpacing.xxs),
-                      Text(
-                        trend!,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: trend!.startsWith('+')
-                                  ? AppColors.success
-                                  : AppColors.error,
-                              fontWeight: FontWeight.w600,
-                            ),
-                      ),
-                    ],
+                if (subtitle != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle!,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: c.textTertiary,
+                        ),
                   ),
                 ],
               ],
             ),
           ),
+          if (trailing != null) trailing!,
         ],
       ),
     );

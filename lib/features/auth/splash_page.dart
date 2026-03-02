@@ -6,25 +6,44 @@ import '../../app/theme/app_theme.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
-  
+
   @override
   State<SplashPage> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends State<SplashPage> {
+class _SplashPageState extends State<SplashPage>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fadeIn;
+  late final Animation<double> _scale;
+
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    _fadeIn = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+    _scale  = Tween<double>(begin: 0.85, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
+    );
+    _controller.forward();
     _checkAuth();
   }
 
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   Future<void> _checkAuth() async {
-    // Small delay for splash effect
-    await Future.delayed(const Duration(milliseconds: 1500));
-    
+    await Future.delayed(const Duration(milliseconds: 1800));
+
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
-    
+
     if (token == null || token.isEmpty) {
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, Routes.login);
@@ -32,23 +51,24 @@ class _SplashPageState extends State<SplashPage> {
     }
 
     try {
-      final dio = buildDio(token: token);
-      final res = await dio.get('/auth/me');
+      final dio  = buildDio(token: token);
+      final res  = await dio.get('/auth/me');
       final user = res.data['user'] as Map<String, dynamic>?;
-      
+
       if (user != null) {
         await prefs.setString('role', user['role']?.toString() ?? 'org_admin');
-        
+        if (user['organizationId'] != null) {
+          await prefs.setString('org_id', user['organizationId'].toString());
+        }
         if (!mounted) return;
         Navigator.pushReplacementNamed(context, Routes.home);
       } else {
         throw Exception('Invalid user data');
       }
-    } catch (e) {
-      // Token invalid or expired, clear and go to login
+    } catch (_) {
       await prefs.remove('token');
       await prefs.remove('role');
-      
+      await prefs.remove('org_id');
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, Routes.login);
     }
@@ -56,74 +76,81 @@ class _SplashPageState extends State<SplashPage> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.appColors;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppColors.background,
-              AppColors.surfaceLow,
-              AppColors.background,
-            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [c.surfaceMid, c.background, c.background],
           ),
         ),
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // App logo/icon
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  gradient: AppGradients.warm(),
-                  borderRadius: BorderRadius.circular(AppRadius.xxl),
-                  boxShadow: AppShadows.shadowXl,
-                ),
-                child: const Icon(
-                  Icons.account_balance_wallet,
-                  size: 64,
-                  color: Colors.white,
-                ),
-              ),
-              
-              const SizedBox(height: AppSpacing.xxl),
-              
-              // App title
-              Text(
-                'USSD Admin',
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  color: AppColors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              
-              const SizedBox(height: AppSpacing.xs),
-              
-              Text(
-                'Payment Management Platform',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              
-              const SizedBox(height: AppSpacing.xxxl),
-              
-              // Loading indicator
-              const SizedBox(
-                width: 40,
-                height: 40,
-                child: CircularProgressIndicator(
-                  strokeWidth: 3,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    AppColors.primaryAmber,
+          child: FadeTransition(
+            opacity: _fadeIn,
+            child: ScaleTransition(
+              scale: _scale,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Logo
+                  Container(
+                    width: 96,
+                    height: 96,
+                    decoration: BoxDecoration(
+                      gradient: AppGradients.amber(colors: c),
+                      borderRadius: BorderRadius.circular(AppRadius.xxl),
+                      boxShadow: [
+                        BoxShadow(
+                          color: c.primaryAmber.withValues(alpha: 0.35),
+                          blurRadius: 32,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.hub_rounded,
+                      size: 48,
+                      color: Colors.white,
+                    ),
                   ),
-                ),
+
+                  const SizedBox(height: AppSpacing.xl),
+
+                  Text(
+                    'PayHub',
+                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                          color: c.textPrimary,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -1,
+                        ),
+                  ),
+
+                  const SizedBox(height: AppSpacing.xs),
+
+                  Text(
+                    'Payment Management Platform',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: c.textSecondary,
+                        ),
+                  ),
+
+                  const SizedBox(height: AppSpacing.xxxl),
+
+                  SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(c.primaryAmber),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

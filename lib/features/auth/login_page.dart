@@ -13,243 +13,263 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
-  final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _loading = false;
+class _LoginPageState extends State<LoginPage>
+    with SingleTickerProviderStateMixin {
+  final _formKey          = GlobalKey<FormState>();
+  final _emailController  = TextEditingController();
+  final _passController   = TextEditingController();
+  bool _loading         = false;
   bool _obscurePassword = true;
+
+  late final AnimationController _animCtrl;
+  late final Animation<double>   _fadeIn;
+  late final Animation<Offset>   _slideUp;
+
+  @override
+  void initState() {
+    super.initState();
+    _animCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _fadeIn  = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
+    _slideUp = Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut));
+    _animCtrl.forward();
+  }
 
   @override
   void dispose() {
     _emailController.dispose();
-    _passwordController.dispose();
+    _passController.dispose();
+    _animCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _loading = true);
 
     try {
-      final email = _emailController.text.trim();
-      final password = _passwordController.text.trim();
-
       final dio = buildDio();
       final res = await dio.post('/auth/login', data: {
-        'email': email,
-        'password': password,
+        'email': _emailController.text.trim(),
+        'password': _passController.text.trim(),
       });
 
-      final data = res.data as Map<String, dynamic>;
+      final data  = res.data as Map<String, dynamic>;
       final token = data['token'] as String?;
+      if (token == null || token.isEmpty) throw Exception('Invalid login response');
 
-      if (token == null || token.isEmpty) {
-        throw Exception('Invalid login response');
-      }
-
-      // Store token
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('token', token);
 
-      // Get user info
-      final me = await buildDio(token: token).get('/auth/me');
+      final me   = await buildDio(token: token).get('/auth/me');
       final user = me.data['user'] as Map<String, dynamic>?;
       final role = user?['role'] as String? ?? 'org_admin';
       await prefs.setString('role', role);
+      if (user?['organizationId'] != null) {
+        await prefs.setString('org_id', user!['organizationId'].toString());
+      }
 
       if (!mounted) return;
-
-      // Navigate to home
       Navigator.pushReplacementNamed(context, Routes.home);
     } catch (e) {
       if (!mounted) return;
-      String message = ErrorHandlers.getErrorMessage(e);
+      String msg = ErrorHandlers.getErrorMessage(e);
       if (e is DioException) {
         final code = e.response?.statusCode ?? 0;
         final data = e.response?.data;
-        final serverMessage = (data is Map && data['message'] is String) ? (data['message'] as String) : null;
-        if (code == 401) {
-          message = serverMessage ?? 'Invalid email or password.';
-        } else if (code == 400) {
-          message = serverMessage ?? 'Invalid request. Please check your input.';
-        } else if (code == 403) {
-          message = serverMessage ?? 'Access denied for this account.';
-        } else if (code == 502) {
-          message = serverMessage ?? 'Bad gateway. Please try again later.';
-        } else if (code == 503) {
-          message = serverMessage ?? 'Service unavailable. Please try again later.';
-        } else if (code == 504) {
-          message = serverMessage ?? 'Gateway timeout. Please try again later.';
-        } else if (serverMessage != null && serverMessage.isNotEmpty) {
-          message = serverMessage;
-        }
+        final srv  = (data is Map && data['message'] is String) ? data['message'] as String : null;
+        if (code == 401)      msg = srv ?? 'Invalid email or password.';
+        else if (code == 400) msg = srv ?? 'Invalid request.';
+        else if (code == 403) msg = srv ?? 'Access denied for this account.';
+        else if (srv != null) msg = srv;
       }
-      DialogHelpers.showError(context, message);
+      DialogHelpers.showError(context, msg);
     } finally {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
+      if (mounted) setState(() => _loading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final c    = context.appColors;
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppColors.background,
-              AppColors.surfaceLow,
-              AppColors.background,
-            ],
+      backgroundColor: c.background,
+      body: Stack(
+        children: [
+          // Decorative gradient blobs
+          Positioned(
+            top: -size.height * 0.1,
+            right: -size.width * 0.2,
+            child: Container(
+              width: size.width * 0.7,
+              height: size.width * 0.7,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(colors: [
+                  c.primaryAmber.withValues(alpha: 0.12),
+                  Colors.transparent,
+                ]),
+              ),
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 420),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // App Logo
-                    Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        gradient: AppGradients.warm(),
-                        borderRadius: BorderRadius.circular(AppRadius.xl),
-                        boxShadow: AppShadows.shadowLg,
-                      ),
-                      child: const Icon(
-                        Icons.account_balance_wallet,
-                        size: 48,
-                        color: Colors.white,
-                      ),
-                    ),
+          Positioned(
+            bottom: -size.height * 0.05,
+            left: -size.width * 0.2,
+            child: Container(
+              width: size.width * 0.6,
+              height: size.width * 0.6,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(colors: [
+                  c.secondaryBlue.withValues(alpha: 0.1),
+                  Colors.transparent,
+                ]),
+              ),
+            ),
+          ),
 
-                    const SizedBox(height: AppSpacing.xl),
-
-                    // Title
-                    Text(
-                      'Welcome Back',
-                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                            color: AppColors.white,
-                          ),
-                    ),
-
-                    const SizedBox(height: AppSpacing.xs),
-
-                    Text(
-                      'Sign in to continue',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                    ),
-
-                    const SizedBox(height: AppSpacing.xxl),
-
-                    // Login Form
-                    GlassCard(
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Email Field
-                            TextFormField(
-                              controller: _emailController,
-                              decoration: const InputDecoration(
-                                labelText: 'Email',
-                                prefixIcon: Icon(Icons.email_outlined),
-                              ),
-                              keyboardType: TextInputType.emailAddress,
-                              textInputAction: TextInputAction.next,
-                              autocorrect: false,
-                              enableSuggestions: false,
-                              validator: Validators.email,
-                            ),
-
-                            const SizedBox(height: AppSpacing.md),
-
-                            // Password Field
-                            TextFormField(
-                              controller: _passwordController,
-                              decoration: InputDecoration(
-                                labelText: 'Password',
-                                prefixIcon: const Icon(Icons.lock_outlined),
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    _obscurePassword
-                                        ? Icons.visibility_off
-                                        : Icons.visibility,
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      _obscurePassword = !_obscurePassword;
-                                    });
-                                  },
+          // Content
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: FadeTransition(
+                    opacity: _fadeIn,
+                    child: SlideTransition(
+                      position: _slideUp,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Logo
+                          Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              gradient: AppGradients.amber(colors: c),
+                              borderRadius: BorderRadius.circular(AppRadius.xl),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: c.primaryAmber.withValues(alpha: 0.30),
+                                  blurRadius: 24,
+                                  offset: const Offset(0, 8),
                                 ),
-                              ),
-                              obscureText: _obscurePassword,
-                              textInputAction: TextInputAction.done,
-                              autocorrect: false,
-                              enableSuggestions: false,
-                              onFieldSubmitted: (_) => _submit(),
-                              validator: (value) => Validators.required(
-                                value,
-                                fieldName: 'Password',
-                              ),
+                              ],
                             ),
+                            child: const Icon(Icons.hub_rounded, size: 40, color: Colors.white),
+                          ),
 
-                            const SizedBox(height: AppSpacing.lg),
+                          const SizedBox(height: AppSpacing.xl),
 
-                            // Login Button
-                            SizedBox(
-                              height: 52,
-                              child: ElevatedButton(
-                                onPressed: _loading ? null : _submit,
-                                child: _loading
-                                    ? const SizedBox(
-                                        height: 20,
-                                        width: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor: AlwaysStoppedAnimation<Color>(
-                                            Colors.black,
-                                          ),
+                          Text(
+                            'Welcome back',
+                            style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                                  color: c.textPrimary,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.5,
+                                ),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            'Sign in to your PayHub account',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: c.textSecondary,
+                                ),
+                          ),
+
+                          const SizedBox(height: AppSpacing.xxl),
+
+                          // Form card
+                          GlassCard(
+                            child: Form(
+                              key: _formKey,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  TextFormField(
+                                    controller: _emailController,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Email address',
+                                      prefixIcon: Icon(Icons.email_outlined),
+                                    ),
+                                    keyboardType: TextInputType.emailAddress,
+                                    textInputAction: TextInputAction.next,
+                                    autocorrect: false,
+                                    enableSuggestions: false,
+                                    validator: Validators.email,
+                                  ),
+                                  const SizedBox(height: AppSpacing.md),
+                                  TextFormField(
+                                    controller: _passController,
+                                    decoration: InputDecoration(
+                                      labelText: 'Password',
+                                      prefixIcon: const Icon(Icons.lock_outline),
+                                      suffixIcon: IconButton(
+                                        icon: Icon(
+                                          _obscurePassword
+                                              ? Icons.visibility_off_outlined
+                                              : Icons.visibility_outlined,
                                         ),
-                                      )
-                                    : const Text('Sign In'),
+                                        onPressed: () => setState(
+                                            () => _obscurePassword = !_obscurePassword),
+                                      ),
+                                    ),
+                                    obscureText: _obscurePassword,
+                                    textInputAction: TextInputAction.done,
+                                    autocorrect: false,
+                                    enableSuggestions: false,
+                                    onFieldSubmitted: (_) => _submit(),
+                                    validator: (v) => Validators.required(v, fieldName: 'Password'),
+                                  ),
+                                  const SizedBox(height: AppSpacing.lg),
+                                  SizedBox(
+                                    height: 52,
+                                    child: ElevatedButton(
+                                      onPressed: _loading ? null : _submit,
+                                      child: _loading
+                                          ? SizedBox(
+                                              height: 20,
+                                              width: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                valueColor: AlwaysStoppedAnimation<Color>(
+                                                  Theme.of(context).brightness == Brightness.dark
+                                                      ? Colors.black
+                                                      : Colors.white,
+                                                ),
+                                              ),
+                                            )
+                                          : const Text('Sign In'),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+
+                          const SizedBox(height: AppSpacing.xl),
+
+                          Text(
+                            'PayHub © 2025',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: c.textTertiary,
+                                ),
+                          ),
+                        ],
                       ),
                     ),
-
-                    const SizedBox(height: AppSpacing.lg),
-
-                    // Footer
-                    Text(
-                      'USSD Admin © 2025',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textTertiary,
-                          ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

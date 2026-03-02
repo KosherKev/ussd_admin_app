@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../app/theme/app_theme.dart';
 import '../../shared/utils/helpers.dart';
 import '../../shared/services/reports_service.dart';
@@ -6,8 +7,6 @@ import '../../shared/models/org_summary.dart';
 import '../../widgets/gradient_header.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/stats_card.dart';
-import '../../app/router/routes.dart';
-import 'package:flutter/services.dart';
 
 class OrgSummaryPage extends StatefulWidget {
   final String orgId;
@@ -25,7 +24,6 @@ class _OrgSummaryPageState extends State<OrgSummaryPage> {
   DateTime? _startDate;
   DateTime? _endDate;
   List<OrgSummaryStats> _stats = [];
-  String _role = 'org_admin';
 
   @override
   void initState() {
@@ -34,266 +32,133 @@ class _OrgSummaryPageState extends State<OrgSummaryPage> {
   }
 
   Future<void> _fetch() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+    setState(() { _loading = true; _error = null; });
     try {
-      _role = await RoleHelpers.getRole();
       final stats = await _reports.getOrgSummary(widget.orgId, startDate: _startDate, endDate: _endDate);
-      setState(() {
-        _stats = stats;
-        _loading = false;
-      });
+      if (mounted) setState(() { _stats = stats; _loading = false; });
     } catch (e) {
-      setState(() {
-        _error = ErrorHandlers.getErrorMessage(e);
-        _loading = false;
-      });
+      if (mounted) setState(() { _error = ErrorHandlers.getErrorMessage(e); _loading = false; });
     }
   }
 
-  Future<void> _pickStartDate() async {
+  Future<void> _pickDate({required bool isStart}) async {
+    final c = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final picked = await showDatePicker(
       context: context,
-      initialDate: _startDate ?? DateFormatters.startOfMonth,
+      initialDate: (isStart ? _startDate : _endDate)
+          ?? (isStart ? DateFormatters.startOfMonth : DateFormatters.endOfMonth),
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: AppColors.primaryAmber,
-              onPrimary: Colors.black,
-              surface: AppColors.surfaceLow,
-              onSurface: AppColors.white,
-            ),
-          ),
-          child: child!,
-        );
-      },
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: isDark
+              ? ColorScheme.dark(primary: c.primaryAmber, onPrimary: Colors.black, surface: c.surfaceLow, onSurface: c.textPrimary)
+              : ColorScheme.light(primary: c.primaryAmber, onPrimary: Colors.white, surface: c.surfaceLow, onSurface: c.textPrimary),
+        ),
+        child: child!,
+      ),
     );
-    if (picked != null) setState(() => _startDate = picked);
-  }
-
-  Future<void> _pickEndDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _endDate ?? DateFormatters.endOfMonth,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: AppColors.primaryAmber,
-              onPrimary: Colors.black,
-              surface: AppColors.surfaceLow,
-              onSurface: AppColors.white,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) setState(() => _endDate = picked);
+    if (picked != null) setState(() => isStart ? _startDate = picked : _endDate = picked);
   }
 
   @override
   Widget build(BuildContext context) {
-    final totalCount = _stats.fold<int>(0, (sum, s) => sum + s.count);
+    final c = context.appColors;
+    final totalCount  = _stats.fold<int>(0, (sum, s) => sum + s.count);
     final totalAmount = _stats.fold<double>(0.0, (sum, s) => sum + s.totalAmount);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
+      appBar: AppBar(
+        title: const Text('Org Summary'),
+        backgroundColor: c.background,
+        leading: IconButton(icon: const Icon(Icons.arrow_back_rounded), onPressed: () => Navigator.pop(context)),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           GradientHeader(
-            title: 'Org Summary',
-            trailing: IconButton(
-              icon: const Icon(Icons.file_download, color: Colors.white),
-              onPressed: _exportCsv,
-            ),
+            title: 'Summary',
+            trailing: IconButton(icon: const Icon(Icons.file_download_outlined, color: Colors.white), onPressed: _exportCsv),
           ),
           const SizedBox(height: AppSpacing.md),
           GlassCard(
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _pickStartDate,
-                        icon: const Icon(Icons.calendar_today),
-                        label: Text(_startDate == null ? 'Start Date' : DateFormatters.formatDate(_startDate)),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _pickEndDate,
-                        icon: const Icon(Icons.event),
-                        label: Text(_endDate == null ? 'End Date' : DateFormatters.formatDate(_endDate)),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _fetch,
-                    icon: const Icon(Icons.search),
-                    label: const Text('Apply Filters'),
-                  ),
-                ),
-              ],
-            ),
+            child: Column(children: [
+              Row(children: [
+                Expanded(child: OutlinedButton.icon(
+                  onPressed: () => _pickDate(isStart: true),
+                  icon: const Icon(Icons.calendar_today_rounded, size: 16),
+                  label: Text(_startDate == null ? 'Start Date' : DateFormatters.formatDate(_startDate)),
+                )),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(child: OutlinedButton.icon(
+                  onPressed: () => _pickDate(isStart: false),
+                  icon: const Icon(Icons.event_rounded, size: 16),
+                  label: Text(_endDate == null ? 'End Date' : DateFormatters.formatDate(_endDate)),
+                )),
+              ]),
+              const SizedBox(height: AppSpacing.sm),
+              SizedBox(width: double.infinity,
+                child: ElevatedButton(onPressed: _fetch, child: const Text('Apply')),
+              ),
+            ]),
           ),
 
           const SizedBox(height: AppSpacing.md),
 
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator())
+                ? Center(child: CircularProgressIndicator(color: c.primaryAmber))
                 : _error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.error_outline, size: 64, color: AppColors.error),
-                            const SizedBox(height: AppSpacing.md),
-                            Text(
-                              _error!,
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: AppSpacing.lg),
-                            ElevatedButton(onPressed: _fetch, child: const Text('Retry')),
-                          ],
+                    ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        Icon(Icons.error_outline, size: 64, color: c.error),
+                        const SizedBox(height: AppSpacing.md),
+                        Text(_error!, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: c.textSecondary), textAlign: TextAlign.center),
+                        const SizedBox(height: AppSpacing.lg),
+                        ElevatedButton(onPressed: _fetch, child: const Text('Retry')),
+                      ]))
+                    : ListView(children: [
+                        StatsCard(label: 'Total Transactions', value: CurrencyFormatters.formatNumber(totalCount), icon: Icons.receipt_long_rounded),
+                        const SizedBox(height: AppSpacing.sm),
+                        StatsCard(label: 'Total Amount', value: CurrencyFormatters.formatCompactGHS(totalAmount), icon: Icons.account_balance_wallet_rounded),
+                        const SizedBox(height: AppSpacing.lg),
+                        Text('Payment Type Breakdown', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: c.textSecondary)),
+                        const SizedBox(height: AppSpacing.sm),
+                        GlassCard(
+                          child: _stats.isEmpty
+                              ? Row(children: [
+                                  Icon(Icons.inbox_outlined, color: c.textTertiary),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Text('No data for selected range', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: c.textSecondary)),
+                                ])
+                              : Column(
+                                  children: _stats.map((s) => Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                                    child: Row(children: [
+                                      Expanded(child: Text(s.paymentTypeName, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: c.textPrimary))),
+                                      Text(CurrencyFormatters.formatNumber(s.count), style: Theme.of(context).textTheme.bodySmall?.copyWith(color: c.textSecondary)),
+                                      const SizedBox(width: AppSpacing.md),
+                                      Text(CurrencyFormatters.formatCompactGHS(s.totalAmount), style: Theme.of(context).textTheme.bodySmall?.copyWith(color: c.textSecondary)),
+                                    ]),
+                                  )).toList(),
+                                ),
                         ),
-                      )
-                    : ListView(
-                        children: [
-                          StatsCard(
-                            label: 'Total Transactions',
-                            value: CurrencyFormatters.formatNumber(totalCount),
-                            icon: Icons.receipt_long,
-                          ),
-                          const SizedBox(height: AppSpacing.sm),
-                          StatsCard(
-                            label: 'Total Amount',
-                            value: CurrencyFormatters.formatCompactGHS(totalAmount),
-                            icon: Icons.account_balance_wallet,
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                          Text(
-                            'Payment Type Breakdown',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.white),
-                          ),
-                          const SizedBox(height: AppSpacing.sm),
-                          GlassCard(
-                            child: Column(
-                              children: _stats.isEmpty
-                                  ? [
-                                      Row(
-                                        children: [
-                                          const Icon(Icons.inbox_outlined, color: AppColors.textTertiary),
-                                          const SizedBox(width: AppSpacing.sm),
-                                          Text(
-                                            'No data for selected range',
-                                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-                                          ),
-                                        ],
-                                      )
-                                    ]
-                                  : _stats.map((s) {
-                                      return Padding(
-                                        padding: const EdgeInsets.all(AppSpacing.sm),
-                                        child: Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                s.paymentTypeName,
-                                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.white),
-                                              ),
-                                            ),
-                                            Text(
-                                              CurrencyFormatters.formatNumber(s.count),
-                                              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
-                                            ),
-                                            const SizedBox(width: AppSpacing.md),
-                                            Text(
-                                              CurrencyFormatters.formatCompactGHS(s.totalAmount),
-                                              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    }).toList(),
-                            ),
-                          ),
-                        ],
-                      ),
+                      ]),
           ),
         ]),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 3,
-        onTap: (i) => Navigator.pushReplacementNamed(context, Routes.home, arguments: i),
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: AppColors.surfaceLow,
-        selectedItemColor: AppColors.primaryAmber,
-        unselectedItemColor: AppColors.textSecondary,
-        elevation: 8,
-        items: [
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_outlined),
-            activeIcon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.business_outlined),
-            activeIcon: Icon(Icons.business),
-            label: 'Organizations',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.payment_outlined),
-            activeIcon: Icon(Icons.payment),
-            label: 'Payments',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart_outlined),
-            activeIcon: Icon(Icons.bar_chart),
-            label: 'Reports',
-          ),
-          if (_role == 'super_admin')
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.admin_panel_settings_outlined),
-              activeIcon: Icon(Icons.admin_panel_settings),
-              label: 'Admin',
-            ),
-        ],
       ),
     );
   }
 
   Future<void> _exportCsv() async {
-    if (_stats.isEmpty) {
-      DialogHelpers.showInfo(context, 'No data to export');
-      return;
-    }
+    if (_stats.isEmpty) { DialogHelpers.showInfo(context, 'No data to export'); return; }
     final header = ['Payment Type', 'Count', 'Total Amount'];
     final buffer = StringBuffer();
     buffer.writeln(header.join(','));
     for (final s in _stats) {
-      final row = [
-        s.paymentTypeName,
-        CurrencyFormatters.formatNumber(s.count),
-        CurrencyFormatters.formatGHS(s.totalAmount),
-      ];
-      buffer.writeln(row.map((v) => '"${v.toString().replaceAll('"', '""')}"').join(','));
+      final row = [s.paymentTypeName, '${s.count}', CurrencyFormatters.formatGHS(s.totalAmount)];
+      buffer.writeln(row.map((v) => '"${v.replaceAll('"', '""')}"').join(','));
     }
     await Clipboard.setData(ClipboardData(text: buffer.toString()));
     if (!mounted) return;
