@@ -4,39 +4,48 @@ import 'app/theme/app_theme.dart';
 import 'app/router/app_router.dart' as app_router;
 import 'app/router/routes.dart';
 
-void main() {
-  runApp(const App());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+  final savedTheme = prefs.getString('theme_mode');
+  final themeMode = savedTheme == 'light' ? ThemeMode.light : ThemeMode.dark;
+
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return Scaffold(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              '${details.exceptionAsString()}\n\n${details.stack?.toString() ?? ''}',
+              style: const TextStyle(color: Colors.red, fontSize: 12),
+            ),
+          ),
+        ),
+      ),
+    );
+  };
+  runApp(App(initialThemeMode: themeMode));
 }
 
 class App extends StatefulWidget {
-  const App({super.key});
+  final ThemeMode initialThemeMode;
+  const App({super.key, required this.initialThemeMode});
 
-  static _AppState? of(BuildContext context) =>
-      context.findAncestorStateOfType<_AppState>();
+  static AppState? of(BuildContext context) =>
+      context.findAncestorStateOfType<AppState>();
 
   @override
-  State<App> createState() => _AppState();
+  State<App> createState() => AppState();
 }
 
-class _AppState extends State<App> {
-  ThemeMode _themeMode = ThemeMode.dark;
-  bool _themeLoaded = false;
+class AppState extends State<App> {
+  late ThemeMode _themeMode;
 
   @override
   void initState() {
     super.initState();
-    _loadTheme();
-  }
-
-  Future<void> _loadTheme() async {
-    final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getString('theme_mode');
-    if (mounted) {
-      setState(() {
-        _themeMode = saved == 'light' ? ThemeMode.light : ThemeMode.dark;
-        _themeLoaded = true;
-      });
-    }
+    _themeMode = widget.initialThemeMode;
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
@@ -51,16 +60,6 @@ class _AppState extends State<App> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_themeLoaded) {
-      return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: buildDarkTheme(),
-        home: const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        ),
-      );
-    }
-
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'PayHub Admin',

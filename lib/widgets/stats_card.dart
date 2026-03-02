@@ -24,7 +24,6 @@ class StatsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.appColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final effectiveIconColor = iconColor ?? c.primaryAmber;
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),

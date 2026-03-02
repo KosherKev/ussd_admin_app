@@ -3,7 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../app/theme/app_theme.dart';
 import '../../app/router/routes.dart';
 import '../../shared/utils/helpers.dart';
-import '../../main.dart';
 import '../dashboard/dashboard_page.dart';
 import '../payments/payment_types_list_page.dart';
 import '../reports/transactions_page.dart';

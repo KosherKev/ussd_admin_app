@@ -22,7 +22,6 @@ class _ProfilePageState extends State<ProfilePage> {
   String? _role;
   String? _orgName;
   String? _orgId;
-  String? _orgPhone;
   bool _sendReceiptSms = false;
   bool _savingOrg = false;
 
@@ -71,16 +70,17 @@ class _ProfilePageState extends State<ProfilePage> {
       // Cache email for DeveloperSettingsPage
       await prefs.setString('email', email ?? '');
 
-      if (mounted) setState(() {
-        _email           = email;
-        _role            = role;
-        _orgName         = orgName;
-        _orgId           = orgId;
-        _orgPhone        = orgPhone;
-        _sendReceiptSms  = smsEnabled;
-        _phoneController.text = orgPhone ?? '';
-        _loading         = false;
-      });
+      if (mounted) {
+        setState(() {
+          _email           = email;
+          _role            = role;
+          _orgName         = orgName;
+          _orgId           = orgId;
+          _sendReceiptSms  = smsEnabled;
+          _phoneController.text = orgPhone ?? '';
+          _loading         = false;
+        });
+      }
     } catch (e) {
       if (mounted) setState(() { _error = ErrorHandlers.getErrorMessage(e); _loading = false; });
     }

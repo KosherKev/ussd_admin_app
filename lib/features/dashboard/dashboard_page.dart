@@ -8,7 +8,6 @@ import '../../shared/services/reports_service.dart';
 import '../../widgets/gradient_header.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/stats_card.dart';
-import '../home/home_shell.dart';
 
 class DashboardPage extends StatefulWidget {
   final String orgId;
@@ -31,10 +30,6 @@ class _DashboardPageState extends State<DashboardPage> {
   Map<DateTime,int> _dailyCounts = {};
   Map<String, int>  _typeCounts  = {};
   Map<String,double>_typeAmounts = {};
-
-  // subscription banner
-  int?  _daysUntilExpiry;
-  bool  _subLoaded = false;
 
   @override
   void initState() {
@@ -103,7 +98,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (_loading)
-                    SizedBox(width: 20, height: 20,
+                    const SizedBox(width: 20, height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)))
                   else
                     IconButton(icon: const Icon(Icons.refresh, color: Colors.white), onPressed: _load),

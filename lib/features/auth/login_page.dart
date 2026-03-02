@@ -81,10 +81,15 @@ class _LoginPageState extends State<LoginPage>
         final code = e.response?.statusCode ?? 0;
         final data = e.response?.data;
         final srv  = (data is Map && data['message'] is String) ? data['message'] as String : null;
-        if (code == 401)      msg = srv ?? 'Invalid email or password.';
-        else if (code == 400) msg = srv ?? 'Invalid request.';
-        else if (code == 403) msg = srv ?? 'Access denied for this account.';
-        else if (srv != null) msg = srv;
+        if (code == 401) {
+          msg = srv ?? 'Invalid email or password.';
+        } else if (code == 400) {
+          msg = srv ?? 'Invalid request.';
+        } else if (code == 403) {
+          msg = srv ?? 'Access denied for this account.';
+        } else if (srv != null) {
+          msg = srv;
+        }
       }
       DialogHelpers.showError(context, msg);
     } finally {

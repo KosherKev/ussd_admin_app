@@ -82,7 +82,7 @@ class _SubscriptionStatusPageState extends State<SubscriptionStatusPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GradientHeader(title: 'Subscription Details'),
+          const GradientHeader(title: 'Subscription Details'),
           const SizedBox(height: AppSpacing.lg),
 
           // Status card

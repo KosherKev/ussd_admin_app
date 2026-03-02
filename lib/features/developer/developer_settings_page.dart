@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../app/theme/app_theme.dart';
-import '../../app/router/routes.dart';
-import '../../shared/utils/helpers.dart';
 import '../../main.dart';
 import '../../widgets/glass_card.dart';
+import '../../shared/utils/helpers.dart';
 import '../home/home_shell.dart';
 
 class DeveloperSettingsPage extends StatefulWidget {
@@ -31,14 +30,16 @@ class _DeveloperSettingsPageState extends State<DeveloperSettingsPage> {
 
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
-    if (mounted) setState(() {
-      _keyPrefix   = prefs.getString('key_prefix');
-      _environment = prefs.getString('key_environment');
-      _projectName = prefs.getString('project_name');
-      _scopes      = prefs.getStringList('key_scopes') ?? [];
-      _webhookUrl  = prefs.getString('webhook_url');
-      _userEmail   = prefs.getString('email');
-    });
+    if (mounted) {
+      setState(() {
+        _keyPrefix   = prefs.getString('key_prefix');
+        _environment = prefs.getString('key_environment');
+        _projectName = prefs.getString('project_name');
+        _scopes      = prefs.getStringList('key_scopes') ?? [];
+        _webhookUrl  = prefs.getString('webhook_url');
+        _userEmail   = prefs.getString('email');
+      });
+    }
   }
 
   @override

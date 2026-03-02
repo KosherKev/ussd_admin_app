@@ -346,7 +346,7 @@ class AppGradients {
 // Theme builders
 // ---------------------------------------------------------------------------
 ThemeData buildDarkTheme() {
-  final c    = AppColors.dark;
+  const c    = AppColors.dark;
   final text = AppTypography.textTheme();
   return _buildTheme(
     brightness: Brightness.dark,
@@ -356,7 +356,7 @@ ThemeData buildDarkTheme() {
 }
 
 ThemeData buildLightTheme() {
-  final c    = AppColors.light;
+  const c    = AppColors.light;
   final text = AppTypography.textTheme();
   return _buildTheme(
     brightness: Brightness.light,
