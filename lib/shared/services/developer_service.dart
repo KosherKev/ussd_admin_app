@@ -37,17 +37,13 @@ class DeveloperService {
     if (status         != null) params['status']         = status;
     if (event          != null) params['event']          = event;
 
-    final res  = await dio.get('/v1/webhooks/deliveries', queryParameters: params);
-    final data = res.data as Map<String, dynamic>;
-    final items = (data['data'] as List<dynamic>? ?? [])
-        .map((j) => WebhookDelivery.fromJson(j as Map<String, dynamic>))
-        .toList();
-    return Paged<WebhookDelivery>(
-      success: true,
-      items:   items,
-      total:   data['total'] as int? ?? 0,
-      page:    data['page']  as int? ?? 1,
-      limit:   data['limit'] as int? ?? limit,
+    final res = await dio.get('/v1/webhooks/deliveries', queryParameters: params);
+    // Webhook deliveries endpoint returns the array under 'data', not 'items'.
+    // Pass itemsKey: 'data' so the generic Paged parser reads the right key.
+    return Paged.fromJson(
+      res.data as Map<String, dynamic>,
+      (j) => WebhookDelivery.fromJson(j),
+      itemsKey: 'data',
     );
   }
 

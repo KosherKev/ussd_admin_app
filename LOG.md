@@ -62,11 +62,11 @@
 | 3A    | HomeShell dev_mode lifecycle refresh         | ✅ Complete |
 | 3B    | org_name persistence on login                | ✅ Complete |
 | 3C    | key_id storage on login                      | ✅ Complete |
-| 4     | Data Layer Robustness                        | ⬜ Pending |
-| 4A    | Transaction date parsing safety              | ⬜ Pending |
-| 4B    | Subscription.fromJson normalisation          | ⬜ Pending |
-| 4C    | Paged.fromJson itemsKey param                | ⬜ Pending |
-| 4D    | PaymentType single-fetch endpoint            | ⬜ Pending |
+| 4     | Data Layer Robustness                        | ✅ Complete |
+| 4A    | Transaction date parsing safety              | ✅ Complete |
+| 4B    | Subscription.fromJson normalisation          | ✅ Complete |
+| 4C    | Paged.fromJson itemsKey param                | ✅ Complete |
+| 4D    | PaymentType single-fetch endpoint            | ✅ Complete |
 | 5     | UX Logic Gaps & Interaction Bugs             | ⬜ Pending |
 | 5A    | TransactionsPage chip auto-apply             | ⬜ Pending |
 | 5B    | Dashboard chart day labels fix               | ⬜ Pending |
@@ -134,6 +134,20 @@
 **Notes:** `flutter analyze` passed 0 issues. The `key_id` field name on the API response is unknown — three candidate names are tried (`apiKeyId`, `keyId`, `api_key_id`). If none match the actual field name, the developer dashboard empty state persists but the app does not crash. The known-issue entry for Phase 3C should be updated once the API schema is confirmed. The `WidgetsBindingObserver` in `HomeShell` complements the existing `pushNamedAndRemoveUntil` approach — it's a safety net for app resume, not a replacement.
 **Next:** Phase 4 — Data Layer Robustness
 
+---
+### 2026-03-04 — Phase 4: Data Layer Robustness
+**Status:** ✅ Complete
+**Files modified:**
+- `lib/shared/models/transaction.dart` (4A) — Replaced `DateTime.parse(json['initiatedAt'] ?? DateTime.now().toIso8601String())` with a call to a new private static `_parseDate(dynamic raw)` method. The method handles: `null` → `DateTime.now()`; `int` → `DateTime.fromMillisecondsSinceEpoch(raw)` (epoch ms); `String` → `DateTime.parse` wrapped in try/catch that returns `DateTime.now()` on `FormatException`. This prevents a single bad date field from crashing the entire transaction list.
+- `lib/shared/models/subscription.dart` (4B) — Added private `_parseDate` helper matching the Transaction pattern (handles epoch ints and malformed strings). Applied it to `startDate`, `endDate`, and `gracePeriodEndDate` — all three previously used bare `DateTime.parse` which would throw on epoch ints or partial date strings. Fixed `ussdEnabled` read order: now `sub['ussdEnabled'] ?? json['ussdEnabled']` — checks the normalised sub-object first, falls back to root. The previous `json['ussdEnabled'] == true || sub['ussdEnabled'] == true` was correct only when both matched; the new form is unambiguous regardless of nesting level.
+- `lib/shared/models/paged.dart` (4C) — Added optional named `itemsKey` parameter (default `'items'`) to `Paged.fromJson`. Updated internal list read to use `json[itemsKey]` instead of hardcoded `json['items']`. Added doc comment explaining the parameter. No callers broken — all existing calls omit the parameter and use the default.
+- `lib/shared/services/developer_service.dart` (4C) — Replaced manual `Paged<WebhookDelivery>` construction (which read `data['data']`, `data['total']`, etc. individually) with `Paged.fromJson(res.data, ..., itemsKey: 'data')`. Both parse the same JSON — this is now a one-liner that matches the pattern used everywhere else, and correctly reads `total`/`page`/`limit` from the root rather than only reading the `data` array.
+- `lib/shared/services/payment_type_service.dart` (4D) — Added `get(orgId, typeId)` method hitting `GET /orgs/:orgId/payment-types/:typeId`. Response normalisation handles `item`, `data`, or root-level returns. The method is documented with a note about falling back to `list` if the API 404s on this endpoint.
+- `lib/features/payments/payment_type_edit_page.dart` (4D) — `_loadPaymentType()` now calls `_service.get(orgId, typeId!)` instead of `_service.list(orgId)` + `firstWhere`. Eliminates fetching all payment types to load one.
+**Files created:** none
+**Notes:** `flutter analyze` passed 0 issues. The `_parseDate` helper pattern is now consistent across both `Transaction` and `Subscription` — if other models need date safety in Phase 5+, the same helper should be added. The `Paged.fromJson` change is backwards-compatible — no existing call sites needed updating. The `PaymentTypeService.get` method assumes the API supports the single-resource endpoint; if it returns 404, the edit page will navigate back with an error message (same behaviour as before but without the all-types overhead).
+**Next:** Phase 5 — UX Logic Gaps & Interaction Bugs
+
 ### Entry Template
 ```
 ---
@@ -170,6 +184,7 @@ Record the before/after error counts here.)*
 | After Ph 1  | 0      | 0        | 0     |
 | After Ph 2  | 0      | 0        | 0     |
 | After Ph 3  | 0      | 0        | 0     |
+| After Ph 4  | 0      | 0        | 0     |
 
 ---
 

@@ -60,19 +60,17 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
 
   Future<void> _loadPaymentType() async {
     try {
-      final types = await _service.list(widget.orgId);
-      final type = types.firstWhere(
-        (t) => t.typeId == widget.typeId,
-        orElse: () => throw Exception('Payment type not found'),
-      );
+      // Use the single-resource endpoint instead of fetching all types
+      // and scanning with firstWhere — avoids an N-item fetch for a 1-item load.
+      final type = await _service.get(widget.orgId, widget.typeId!);
 
       if (mounted) {
         setState(() {
-          _typeIdController.text = type.typeId;
-          _nameController.text = type.name;
+          _typeIdController.text      = type.typeId;
+          _nameController.text        = type.name;
           _descriptionController.text = type.description ?? '';
-          _minAmountController.text = type.minAmount.toString();
-          _maxAmountController.text = type.maxAmount.toString();
+          _minAmountController.text   = type.minAmount.toString();
+          _maxAmountController.text   = type.maxAmount.toString();
           _enabled = type.enabled;
           _loading = false;
         });
