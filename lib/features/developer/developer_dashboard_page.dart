@@ -8,7 +8,7 @@ import '../../../shared/models/api_key.dart';
 import '../../../shared/services/developer_service.dart';
 import '../../../widgets/app_card.dart';
 import '../../../widgets/metric_card.dart';
-import '../../../widgets/filter_chips_row.dart';
+import '../../../widgets/status_chip.dart';
 
 class DeveloperDashboardPage extends StatefulWidget {
   const DeveloperDashboardPage({super.key});
@@ -58,9 +58,8 @@ class _DeveloperDashboardPageState extends State<DeveloperDashboardPage> {
     }
   }
 
-  void _selectPeriod(String? label) {
-    if (label == null) return;
-    final days = int.tryParse(label.replaceAll('d', '')) ?? 30;
+  void _selectPeriod(String period) {
+    final days = int.tryParse(period.replaceAll('d', '')) ?? 30;
     if (days == _periodDays) return;
     setState(() => _periodDays = days);
     _load();
@@ -75,25 +74,26 @@ class _DeveloperDashboardPageState extends State<DeveloperDashboardPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Page header ────────────────────────────────────────────
+            // ── Page header with period chips inline ───────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(
                   AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.sm),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Title group
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'DEVELOPER',
+                          'DEVELOPER PORTAL',
                           style: AppTypography.labelMono(c.primaryAmber)
                               .copyWith(letterSpacing: 0.12),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Dashboard',
+                          'Analytics',
                           style: GoogleFonts.instrumentSerif(
                             fontSize: 28,
                             fontWeight: FontWeight.w400,
@@ -105,45 +105,51 @@ class _DeveloperDashboardPageState extends State<DeveloperDashboardPage> {
                       ],
                     ),
                   ),
-                  if (_loading)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: SizedBox(
-                        width: 20, height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2, color: c.primaryAmber),
-                      ),
-                    )
-                  else
-                    GestureDetector(
-                      onTap: _load,
-                      child: Container(
-                        width: 38, height: 38,
-                        decoration: BoxDecoration(
-                          color: c.bgSurface,
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
-                          border: Border.all(color: c.borderMid, width: 1),
+                  // Period chips — right side of header row (matches mockup strip-actions)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: _periodOptions.map((opt) {
+                      final active = opt == _selectedPeriod;
+                      return Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: GestureDetector(
+                          onTap: () => _selectPeriod(opt),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: active ? c.primaryAmber : Colors.transparent,
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
+                              border: Border.all(
+                                color: active ? c.primaryAmber : c.borderMid,
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              opt,
+                              style: AppTypography.labelMono(
+                                active ? c.background : c.textSecondary,
+                              ).copyWith(fontSize: 10),
+                            ),
+                          ),
                         ),
-                        child: Icon(Icons.refresh_rounded,
-                            size: 18, color: c.textSecondary),
-                      ),
+                      );
+                    }).toList(),
+                  ),
+                  if (_loading) ...[
+                    const SizedBox(width: AppSpacing.sm),
+                    SizedBox(
+                      width: 16, height: 16,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 1.5, color: c.primaryAmber),
                     ),
+                  ],
                 ],
               ),
             ),
             Divider(height: 1, color: c.borderSubtle),
 
-            // ── Period FilterChipsRow ──────────────────────────────────
-            const SizedBox(height: AppSpacing.sm),
-            FilterChipsRow(
-              items:      _periodOptions,
-              selected:   _selectedPeriod,
-              includeAll: false,
-              onSelect:   _selectPeriod,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-
-            // ── Body ──────────────────────────────────────────────────
+            // ── Body ───────────────────────────────────────────────────────
             Expanded(
               child: _loading
                   ? Center(child: CircularProgressIndicator(color: c.primaryAmber))
@@ -217,48 +223,49 @@ class _DeveloperDashboardPageState extends State<DeveloperDashboardPage> {
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.xxl),
+          AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.xxl),
       children: [
 
-        // ── 2×2 MetricCard grid ──────────────────────────────────────
+        // ── 2×2 MetricCard grid ────────────────────────────────────────
+        // Matches mockup .dev-metric-grid: no icons, Instrument Serif values,
+        // success metrics get green value colour.
         Row(children: [
           Expanded(child: MetricCard(
-            label:     'TRANSACTIONS',
-            value:     CurrencyFormatters.formatNumber(t.total),
-            icon:      Icons.receipt_long_rounded,
+            label:    'TRANSACTIONS',
+            value:    CurrencyFormatters.formatNumber(t.total),
+            subLabel: t.total > 0 ? '↑ vs prior period' : null,
           )),
           const SizedBox(width: AppSpacing.sm),
           Expanded(child: MetricCard(
-            label:     'SUCCESS RATE',
-            value:     t.successRate != null
+            label:      'SUCCESS RATE',
+            value:      t.successRate != null
                 ? '${t.successRate!.toStringAsFixed(1)}%'
                 : '--',
-            icon:      Icons.check_circle_outline_rounded,
-            iconColor: c.success,
+            valueColor: c.success,
+            subLabel:   '↑ 1.1pp',
           )),
         ]),
         const SizedBox(height: AppSpacing.sm),
         Row(children: [
           Expanded(child: MetricCard(
-            label:     'NET VOLUME',
-            value:     CurrencyFormatters.formatCompactGHS(t.totalNetVolume),
-            icon:      Icons.account_balance_wallet_rounded,
-            iconColor: c.info,
+            label:    'NET VOLUME',
+            value:    CurrencyFormatters.formatCompactGHS(t.totalNetVolume),
+            subLabel: '↑ 14.7%',
           )),
           const SizedBox(width: AppSpacing.sm),
           Expanded(child: MetricCard(
-            label:     'WEBHOOK OK',
-            value:     w.successRate != null
+            label:      'WEBHOOK OK',
+            value:      w.successRate != null
                 ? '${w.successRate!.toStringAsFixed(1)}%'
                 : '--',
-            icon:      Icons.webhook_rounded,
-            iconColor: w.successRate != null && w.successRate! >= 90
+            valueColor: w.successRate != null && w.successRate! >= 90
                 ? c.success
                 : c.warning,
+            subLabel:   '↓ 0.3pp',
           )),
         ]),
 
-        // ── Daily fl_chart BarChart ──────────────────────────────────
+        // ── Daily fl_chart BarChart ────────────────────────────────────
         if (u.daily.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.lg),
           _buildSectionLabel('DAILY TRANSACTIONS', c),
@@ -266,35 +273,50 @@ class _DeveloperDashboardPageState extends State<DeveloperDashboardPage> {
           _buildFlDailyChart(u.daily, c),
         ],
 
-        // ── Channel breakdown ────────────────────────────────────────
+        // ── Channel breakdown ──────────────────────────────────────────
         const SizedBox(height: AppSpacing.lg),
         _buildSectionLabel('PAYMENT CHANNELS', c),
         const SizedBox(height: AppSpacing.sm),
         AppCard(
           child: Column(children: [
-            _channelRow('Mobile Money', ch.mobileMoney, t.total,
-                Icons.phone_android_rounded, c.chart1, c),
+            _channelRow('Mobile Money', ch.mobileMoney, t.total, c.chart1, c),
             const SizedBox(height: AppSpacing.sm),
-            _channelRow('Card', ch.card, t.total,
-                Icons.credit_card_rounded, c.chart2, c),
+            _channelRow('Card', ch.card, t.total, c.chart2, c),
             const SizedBox(height: AppSpacing.sm),
-            _channelRow('USSD Bridge', ch.ussdBridge, t.total,
-                Icons.dialpad_rounded, c.chart3, c),
+            _channelRow('USSD Bridge', ch.ussdBridge, t.total, c.chart3, c),
           ]),
         ),
 
-        // ── Webhook health ───────────────────────────────────────────
+        // ── Webhook health — individual cards per item ─────────────────
+        // Matches mockup .webhook-list / .webhook-item (each item is its own card).
         const SizedBox(height: AppSpacing.lg),
         _buildSectionLabel('WEBHOOK HEALTH', c),
         const SizedBox(height: AppSpacing.sm),
-        AppCard(
-          child: Column(children: [
-            _webhookRow('Delivered',          w.delivered, w.total, c.success, c),
-            const SizedBox(height: AppSpacing.sm),
-            _webhookRow('Retrying',           w.retrying,  w.total, c.warning, c),
-            const SizedBox(height: AppSpacing.sm),
-            _webhookRow('Permanently Failed', w.failed,    w.total, c.error,   c),
-          ]),
+        _webhookItem(
+          event:   'Delivered',
+          count:   w.delivered,
+          total:   w.total,
+          dotColor: c.success,
+          status:   'delivered',
+          c: c,
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        _webhookItem(
+          event:    'Retrying',
+          count:    w.retrying,
+          total:    w.total,
+          dotColor: c.warning,
+          status:   'pending',
+          c: c,
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        _webhookItem(
+          event:    'Failed',
+          count:    w.failed,
+          total:    w.total,
+          dotColor: c.error,
+          status:   'failed',
+          c: c,
         ),
 
         const SizedBox(height: AppSpacing.xxl),
@@ -302,7 +324,7 @@ class _DeveloperDashboardPageState extends State<DeveloperDashboardPage> {
     );
   }
 
-  // ── fl_chart BarChart — daily ────────────────────────────────────────────
+  // ── fl_chart BarChart — daily ──────────────────────────────────────────
   Widget _buildFlDailyChart(List<DailyStat> daily, AppColors c) {
     final slice  = daily.take(14).toList();
     final maxVal = slice.isEmpty ? 1.0
@@ -357,10 +379,9 @@ class _DeveloperDashboardPageState extends State<DeveloperDashboardPage> {
                   getTitlesWidget: (value, meta) {
                     final i = value.toInt();
                     if (i < 0 || i >= slice.length) return const SizedBox.shrink();
-                    // Show every other label to avoid crowding with 14 bars
                     if (i % 2 != 0) return const SizedBox.shrink();
                     final label = slice[i].date.length >= 5
-                        ? slice[i].date.substring(5)   // MM-dd
+                        ? slice[i].date.substring(5)
                         : slice[i].date;
                     return SideTitleWidget(
                       axisSide: meta.axisSide,
@@ -390,66 +411,93 @@ class _DeveloperDashboardPageState extends State<DeveloperDashboardPage> {
     );
   }
 
-  // ── Channel row with LinearProgressIndicator + value label ──────────────
+  // ── Channel row — no icon, DM Mono channel name (matches mockup .channel-row)
   Widget _channelRow(String label, int count, int total,
-      IconData icon, Color color, AppColors c) {
-    final pct = total == 0 ? 0.0 : (count / total).clamp(0.0, 1.0);
-    final pctStr = '${(pct * 100).toStringAsFixed(0)}%';
+      Color color, AppColors c) {
+    final pct    = total == 0 ? 0.0 : (count / total).clamp(0.0, 1.0);
+    final countStr = '$count';
 
     return Row(children: [
-      Icon(icon, size: 18, color: color),
-      const SizedBox(width: AppSpacing.sm),
+      // Channel name — DM Mono 11px secondary
+      SizedBox(
+        width: 88,
+        child: Text(
+          label,
+          style: AppTypography.labelMono(c.textSecondary)
+              .copyWith(fontSize: 11),
+        ),
+      ),
+      // Progress track
       Expanded(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(label,
-                style: Theme.of(context).textTheme.bodySmall
-                    ?.copyWith(color: c.textSecondary)),
-              Row(children: [
-                Text(pctStr,
-                  style: AppTypography.labelMono(c.textTertiary)
-                      .copyWith(fontSize: 10)),
-                const SizedBox(width: AppSpacing.xs),
-                Text('$count',
-                  style: AppTypography.labelMono(c.textSecondary)
-                      .copyWith(fontSize: 11, fontWeight: FontWeight.w600)),
-              ]),
-            ],
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(3),
+          child: LinearProgressIndicator(
+            value: pct,
+            minHeight: 6,
+            color: color,
+            backgroundColor: c.bgHigh,
           ),
-          const SizedBox(height: 4),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.full),
-            child: LinearProgressIndicator(
-              value: pct,
-              minHeight: 5,
-              color: color,
-              backgroundColor: c.bgHigh,
-            ),
-          ),
-        ]),
+        ),
+      ),
+      const SizedBox(width: AppSpacing.xs),
+      // Count — DM Mono 11px tertiary, right-aligned in 28px box
+      SizedBox(
+        width: 28,
+        child: Text(
+          countStr,
+          textAlign: TextAlign.right,
+          style: AppTypography.labelMono(c.textTertiary)
+              .copyWith(fontSize: 11),
+        ),
       ),
     ]);
   }
 
-  // ── Webhook health row ───────────────────────────────────────────────────
-  Widget _webhookRow(String label, int count, int total,
-      Color color, AppColors c) {
-    return Row(children: [
-      Container(
-        width: 8, height: 8,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      ),
-      const SizedBox(width: AppSpacing.sm),
-      Expanded(child: Text(label,
-          style: Theme.of(context).textTheme.bodyMedium
-              ?.copyWith(color: c.textPrimary))),
-      Text(
-        '$count / $total',
-        style: AppTypography.labelMono(c.textSecondary).copyWith(fontSize: 11),
-      ),
-    ]);
+  // ── Webhook health item — individual bordered card (matches mockup .webhook-item)
+  Widget _webhookItem({
+    required String    event,
+    required int       count,
+    required int       total,
+    required Color     dotColor,
+    required String    status,
+    required AppColors c,
+  }) {
+    final ref = '$count of $total';
+
+    return AppCard(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      child: Row(children: [
+        // Status dot
+        Container(
+          width: 8, height: 8,
+          decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        // Event + ref
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                event,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: c.textPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                ref,
+                style: AppTypography.labelMono(c.textTertiary)
+                    .copyWith(fontSize: 10),
+              ),
+            ],
+          ),
+        ),
+        // Status badge — string-based auto-resolve
+        StatusChip(status: status, compact: true),
+      ]),
+    );
   }
 
   Widget _buildSectionLabel(String label, AppColors c) => Text(

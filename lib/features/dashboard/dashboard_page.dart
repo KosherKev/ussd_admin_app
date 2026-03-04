@@ -213,36 +213,30 @@ class _DashboardPageState extends State<DashboardPage> {
       _buildHeroCard(c),
       const SizedBox(height: AppSpacing.sm),
 
-      // 2-col metric grid
+      // 2-col metric grid (no icons — matches mockup .stat-cell)
       Row(children: [
         Expanded(child: MetricCard(
           label: 'TRANSACTIONS',
           value: CurrencyFormatters.formatNumber(_totalTxns),
-          icon:  Icons.receipt_long_rounded,
         )),
         const SizedBox(width: AppSpacing.sm),
         Expanded(child: MetricCard(
-          label:     'COMMISSION',
-          value:     'GHS ${CurrencyFormatters.formatNumber(_totalComm.round())}',
-          icon:      Icons.account_balance_wallet_rounded,
-          iconColor: c.info,
+          label: 'COMMISSION',
+          value: 'GHS ${CurrencyFormatters.formatNumber(_totalComm.round())}',
         )),
       ]),
       if (_ussdStats.isNotEmpty) ...[
         const SizedBox(height: AppSpacing.sm),
         Row(children: [
           Expanded(child: MetricCard(
-            label:     'USSD SESSIONS',
-            value:     CurrencyFormatters.formatNumber(_ussdTotal),
-            icon:      Icons.dialpad_rounded,
-            iconColor: c.secondaryBlue,
+            label: 'USSD SESSIONS',
+            value: CurrencyFormatters.formatNumber(_ussdTotal),
           )),
           const SizedBox(width: AppSpacing.sm),
           Expanded(child: MetricCard(
-            label:     'COMPLETION',
-            value:     '${_ussdCompletion.toStringAsFixed(1)}%',
-            icon:      Icons.check_circle_outline_rounded,
-            iconColor: _ussdCompletion >= 70 ? c.success : c.warning,
+            label:      'COMPLETION',
+            value:      '${_ussdCompletion.toStringAsFixed(1)}%',
+            valueColor: _ussdCompletion >= 70 ? c.success : c.warning,
           )),
         ]),
       ],

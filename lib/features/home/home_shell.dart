@@ -163,11 +163,17 @@ class _NavItem {
 // ---------------------------------------------------------------------------
 // _CustomBottomNav — Refined Financial Brutalism bottom navigation bar
 //
+// Matches mockup .phone-nav / .phone-nav-item pattern:
 // - Height: 64px + bottom safe area padding
-// - Background: bgSurface, top border: 1px borderStrong
-// - Active: amber 3px top indicator line + amber icon + amber label (labelSmall Sora)
-// - Inactive: textTertiary icon + label
-// - No animated NavigationIndicator pill
+// - Background: bgSurface, top border: 1px borderSubtle
+// - Active tab:
+//     • 2px × 18px amber pill (pni-dot) above the icon square
+//     • Icon square: amberBg fill + 1px amberBorder border, r=4
+//     • Label: amber, Sora 9px
+// - Inactive tab:
+//     • Empty 2px spacer (pni-dot transparent)
+//     • Icon square: bgHigh fill, opacity 0.5
+//     • Label: textTertiary, Sora 9px
 // ---------------------------------------------------------------------------
 class _CustomBottomNav extends StatelessWidget {
   const _CustomBottomNav({
@@ -182,14 +188,13 @@ class _CustomBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c    = context.appColors;
-    final text = Theme.of(context).textTheme;
+    final c      = context.appColors;
     final bottom = MediaQuery.of(context).padding.bottom;
 
     return Container(
       decoration: BoxDecoration(
         color: c.bgSurface,
-        border: Border(top: BorderSide(color: c.borderStrong, width: 1)),
+        border: Border(top: BorderSide(color: c.borderSubtle, width: 1)),
       ),
       padding: EdgeInsets.only(bottom: bottom),
       height: 64 + bottom,
@@ -203,51 +208,49 @@ class _CustomBottomNav extends StatelessWidget {
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: () => onTap(i),
-              child: SizedBox(
-                height: 64,
-                child: Stack(
-                  alignment: Alignment.topCenter,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // 3px top indicator line when active
-                    if (active)
-                      Positioned(
-                        top: 0,
-                        left: 12,
-                        right: 12,
-                        child: Container(
-                          height: 3,
-                          decoration: BoxDecoration(
-                            color: c.primaryAmber,
-                            borderRadius: const BorderRadius.vertical(
-                              bottom: Radius.circular(3),
-                            ),
-                          ),
+                    // ── Amber pill indicator (pni-dot) ──────────────────
+                    Container(
+                      width: 18,
+                      height: 2,
+                      decoration: BoxDecoration(
+                        color: active ? c.primaryAmber : Colors.transparent,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    // ── Icon square (pni-icon) ───────────────────────────
+                    Opacity(
+                      opacity: active ? 1.0 : 0.5,
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: active ? c.amberBg : c.bgHigh,
+                          borderRadius: BorderRadius.circular(4),
+                          border: active
+                              ? Border.all(color: c.amberBorder, width: 1)
+                              : null,
+                        ),
+                        child: Icon(
+                          item.icon,
+                          size: 14,
+                          color: active ? c.primaryAmber : c.textTertiary,
                         ),
                       ),
-
-                    // Icon + label column
-                    Padding(
-                      padding: const EdgeInsets.only(top: 10),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            item.icon,
-                            size: 22,
-                            color: active ? c.primaryAmber : c.textTertiary,
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            item.label,
-                            style: text.labelSmall?.copyWith(
-                              color: active ? c.primaryAmber : c.textTertiary,
-                              fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                              fontSize: 10,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    // ── Label (pni-label) ────────────────────────────────
+                    Text(
+                      item.label,
+                      style: AppTypography.labelMono(
+                        active ? c.primaryAmber : c.textTertiary,
+                      ).copyWith(fontSize: 9, letterSpacing: 0.05),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
