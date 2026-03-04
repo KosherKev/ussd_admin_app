@@ -7,6 +7,8 @@ class Routes {
   static const paymentTypes    = '/payment-types';
   static const paymentTypeEdit = '/payment-types/edit';
 
+  static const payouts = '/payouts';
+
   static const subscriptionStatus = '/subscriptions/status';
 
   static const reportsTransactions = '/reports/transactions';

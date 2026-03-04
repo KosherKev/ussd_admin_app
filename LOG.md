@@ -53,11 +53,11 @@
 | 1B    | Dio timeout configuration                    | ✅ Complete |
 | 1C    | 401 global interceptor + auto-redirect       | ✅ Complete |
 | 1D    | DialogHelpers.showLoading leak fix           | ✅ Complete |
-| 2     | Missing Features & Dead Routes               | ⬜ Pending |
-| 2A    | Payout Management page + wiring              | ⬜ Pending |
-| 2B    | OrgSummaryPage entry point                   | ⬜ Pending |
-| 2C    | USSD Sessions card on Dashboard              | ⬜ Pending |
-| 2D    | Subscription nav null-guard                  | ⬜ Pending |
+| 2     | Missing Features & Dead Routes               | ✅ Complete |
+| 2A    | Payout Management page + wiring              | ✅ Complete |
+| 2B    | OrgSummaryPage entry point                   | ✅ Complete |
+| 2C    | USSD Sessions card on Dashboard              | ✅ Complete |
+| 2D    | Subscription nav null-guard                  | ✅ Complete |
 | 3     | State Management & Session Integrity         | ⬜ Pending |
 | 3A    | HomeShell dev_mode lifecycle refresh         | ⬜ Pending |
 | 3B    | org_name persistence on login                | ⬜ Pending |
@@ -109,6 +109,20 @@
 **Notes:** `flutter analyze` passed with 0 issues before and after. The 401 interceptor will prevent stuck error screens after session expiry — it clears all 7 session keys (token, role, org_id, org_name, dev_mode, key_id, email) and uses `navigatorKey` to push login without needing a BuildContext.
 **Next:** Phase 2 — Missing Features & Dead Routes
 
+---
+### 2026-03-04 — Phase 2: Missing Features & Dead Routes
+**Status:** ✅ Complete
+**Files created:**
+- `lib/features/payouts/payouts_page.dart` (2A) — Full payout management screen: lists pending payouts from `PayoutService.listPending()`, per-card `_processing` guard prevents double-tap, Schedule New Payout button calls `PayoutService.schedule(orgId)` with confirm dialog, Process button calls `PayoutService.process(id)`. Net amount, scheduled date, status badge, org name all displayed. Full error/empty states.
+**Files modified:**
+- `lib/app/router/routes.dart` (2A) — Added `static const payouts = '/payouts'`.
+- `lib/app/router/app_router.dart` (2A) — Added `PayoutsPage` import and `Routes.payouts` case.
+- `lib/features/home/home_shell.dart` (2A) — Added `PayoutsPage` import, inserted Payouts as 4th tab in `_orgAdminTabs` (between Reports and Settings), added matching `NavigationDestination` with `account_balance` icon.
+- `lib/features/dashboard/dashboard_page.dart` (2A/2B/2C) — Added `ussd_session_stats.dart` import. Extended `_load()` to `Future.wait` transactions and USSD sessions concurrently. Added `_ussdStats`, `_ussdTotal`, `_ussdCompletion` state fields. Added USSD Sessions metric card (shows total + completion %). Added quick-action row: "Org Summary" (navigates to `Routes.reportsOrgSummary`, disabled if no orgId) and "Payouts" (navigates to `Routes.payouts`). Added `_quickActionCard` helper widget.
+- `lib/features/settings/profile_page.dart` (2D) — Added null-guard on subscription navigation: checks `_orgId != null && orgId.isNotEmpty` before pushing route, shows `DialogHelpers.showError` if no org is linked instead of passing empty string to the API.
+**Notes:** `flutter analyze` passed 0 issues. The null guard in 2D prevents the `/subscriptions//status` 404 — previously `_orgId` could be null and the router cast it to `String?? ''` producing a malformed URL. USSD sessions card is shown only when `_ussdStats.isNotEmpty` so it hides gracefully if the endpoint returns nothing. All Future.wait errors are caught by the single catch block.
+**Next:** Phase 3 — State Management & Session Integrity
+
 ### Entry Template
 ```
 ---
@@ -143,6 +157,7 @@ Record the before/after error counts here.)*
 |-------------|--------|----------|-------|
 | Baseline    | 0      | 0        | 0     |
 | After Ph 1  | 0      | 0        | 0     |
+| After Ph 2  | 0      | 0        | 0     |
 
 ---
 

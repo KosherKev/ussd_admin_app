@@ -5,6 +5,7 @@ import '../../app/router/routes.dart';
 import '../../shared/utils/helpers.dart';
 import '../dashboard/dashboard_page.dart';
 import '../payments/payment_types_list_page.dart';
+import '../payouts/payouts_page.dart';
 import '../reports/transactions_page.dart';
 import '../settings/profile_page.dart';
 import '../developer/developer_dashboard_page.dart';
@@ -50,6 +51,7 @@ class _HomeShellState extends State<HomeShell> {
     DashboardPage(orgId: _orgId),
     PaymentTypesListPage(orgId: _orgId, embedded: true),
     const TransactionsPage(),
+    const PayoutsPage(),
     const ProfilePage(),
   ];
 
@@ -68,6 +70,11 @@ class _HomeShellState extends State<HomeShell> {
       icon:         Icon(Icons.receipt_long_outlined),
       selectedIcon: Icon(Icons.receipt_long_rounded),
       label: 'Reports',
+    ),
+    NavigationDestination(
+      icon:         Icon(Icons.account_balance_outlined),
+      selectedIcon: Icon(Icons.account_balance_rounded),
+      label: 'Payouts',
     ),
     NavigationDestination(
       icon:         Icon(Icons.settings_outlined),

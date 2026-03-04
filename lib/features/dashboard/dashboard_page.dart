@@ -4,6 +4,7 @@ import '../../app/theme/app_theme.dart';
 import '../../app/router/routes.dart';
 import '../../shared/utils/helpers.dart';
 import '../../shared/models/transaction.dart';
+import '../../shared/models/ussd_session_stats.dart';
 import '../../shared/services/reports_service.dart';
 import '../../widgets/gradient_header.dart';
 import '../../widgets/glass_card.dart';
@@ -31,6 +32,11 @@ class _DashboardPageState extends State<DashboardPage> {
   Map<String, int>  _typeCounts  = {};
   Map<String,double>_typeAmounts = {};
 
+  // USSD session stats (Phase 2C)
+  List<UssdSessionStats> _ussdStats = [];
+  int    _ussdTotal      = 0;
+  double _ussdCompletion = 0;
+
   @override
   void initState() {
     super.initState();
@@ -43,15 +49,25 @@ class _DashboardPageState extends State<DashboardPage> {
       final prefs = await SharedPreferences.getInstance();
       _orgName = prefs.getString('org_name');
 
-      final result = await _reportsService.getTransactions(
-        organizationId: widget.orgId.isNotEmpty ? widget.orgId : null,
-        startDate: DateFormatters.sevenDaysAgo,
-        endDate:   DateTime.now(),
-        page: 1, limit: 10,
-      );
+      // Fetch transactions and USSD sessions concurrently
+      final results = await Future.wait([
+        _reportsService.getTransactions(
+          organizationId: widget.orgId.isNotEmpty ? widget.orgId : null,
+          startDate: DateFormatters.sevenDaysAgo,
+          endDate:   DateTime.now(),
+          page: 1, limit: 10,
+        ),
+        _reportsService.getUssdSessions(
+          startDate: DateFormatters.sevenDaysAgo,
+          endDate:   DateTime.now(),
+        ),
+      ]);
 
-      _recent        = result.items;
-      _totalTxns     = result.total;
+      final result    = results[0] as dynamic;
+      final ussdStats = results[1] as List<UssdSessionStats>;
+
+      _recent        = result.items as List<Transaction>;
+      _totalTxns     = result.total as int;
       _totalAmount   = _recent.fold(0.0, (s, t) => s + t.amount);
       _totalComm     = _recent.fold(0.0, (s, t) => s + t.commission);
       _dailyCounts   = _buildDailyCounts(_recent);
@@ -64,6 +80,14 @@ class _DashboardPageState extends State<DashboardPage> {
       }
       _typeCounts  = bCounts;
       _typeAmounts = bAmounts;
+
+      // USSD stats
+      _ussdStats = ussdStats;
+      _ussdTotal = ussdStats.fold(0, (s, e) => s + e.count);
+      final completed = ussdStats
+          .where((e) => e.status.toLowerCase() == 'completed')
+          .fold(0, (s, e) => s + e.count);
+      _ussdCompletion = _ussdTotal == 0 ? 0.0 : (completed / _ussdTotal) * 100;
 
       if (mounted) setState(() => _loading = false);
     } catch (e) {
@@ -146,6 +170,68 @@ class _DashboardPageState extends State<DashboardPage> {
       const SizedBox(height: AppSpacing.sm),
       StatsCard(label: 'Total Commission',value: CurrencyFormatters.formatGHS(_totalComm),      icon: Icons.payments_rounded),
 
+      // USSD Sessions card (Phase 2C)
+      if (_ussdStats.isNotEmpty) ...[
+        const SizedBox(height: AppSpacing.sm),
+        GlassCard(
+          child: Row(children: [
+            Container(
+              width: 44, height: 44,
+              decoration: BoxDecoration(
+                color: c.secondaryBlue.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: Icon(Icons.dialpad_rounded, color: c.secondaryBlue, size: 22),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('USSD Sessions', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: c.textSecondary)),
+              Text(
+                CurrencyFormatters.formatNumber(_ussdTotal),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: c.textPrimary, fontWeight: FontWeight.w700),
+              ),
+            ])),
+            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Text('Completion', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: c.textSecondary)),
+              Text(
+                '${_ussdCompletion.toStringAsFixed(1)}%',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: _ussdCompletion >= 70 ? c.success : c.warning,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ]),
+          ]),
+        ),
+      ],
+
+      const SizedBox(height: AppSpacing.md),
+
+      // Quick actions row — Org Summary (2B) + Payouts (2A)
+      Row(children: [
+        Expanded(
+          child: _quickActionCard(
+            icon: Icons.bar_chart_rounded,
+            label: 'Org Summary',
+            color: c.info,
+            onTap: widget.orgId.isNotEmpty
+                ? () => Navigator.pushNamed(context, Routes.reportsOrgSummary, arguments: widget.orgId)
+                : null,
+            c: c,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: _quickActionCard(
+            icon: Icons.account_balance_rounded,
+            label: 'Payouts',
+            color: c.success,
+            onTap: () => Navigator.pushNamed(context, Routes.payouts),
+            c: c,
+          ),
+        ),
+      ]),
+
       const SizedBox(height: AppSpacing.lg),
 
       // Weekly chart
@@ -193,6 +279,36 @@ class _DashboardPageState extends State<DashboardPage> {
       const SizedBox(height: AppSpacing.xxl),
     ],
   );
+
+  Widget _quickActionCard({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback? onTap,
+    required AppColors c,
+  }) =>
+      GlassCard(
+        onTap: onTap,
+        child: Row(children: [
+          Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: onTap != null ? c.textPrimary : c.textDisabled,
+              fontWeight: FontWeight.w600,
+            ),
+          )),
+          Icon(Icons.chevron_right_rounded, color: onTap != null ? c.textTertiary : c.textDisabled, size: 18),
+        ]),
+      );
 
   Widget _buildWeeklyChart(AppColors c) {
     final entries = _dailyCounts.entries.toList()..sort((a, b) => a.key.compareTo(b.key));

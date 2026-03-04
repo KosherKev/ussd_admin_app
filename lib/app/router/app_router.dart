@@ -4,6 +4,7 @@ import '../../features/auth/login_page.dart';
 import '../../features/home/home_shell.dart';
 import '../../features/payments/payment_types_list_page.dart';
 import '../../features/payments/payment_type_edit_page.dart';
+import '../../features/payouts/payouts_page.dart';
 import '../../features/subscriptions/subscription_status_page.dart';
 import '../../features/reports/transactions_page.dart';
 import '../../features/reports/org_summary_page.dart';
@@ -33,6 +34,8 @@ Route<dynamic>? onGenerateRoute(RouteSettings settings) {
           typeId: args['typeId'] as String?,
         ),
       );
+    case Routes.payouts:
+      return MaterialPageRoute(builder: (_) => const PayoutsPage());
     case Routes.subscriptionStatus:
       final subId = (settings.arguments as String?) ?? '';
       return MaterialPageRoute(builder: (_) => SubscriptionStatusPage(id: subId));

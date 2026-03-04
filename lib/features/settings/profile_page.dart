@@ -159,7 +159,21 @@ class _ProfilePageState extends State<ProfilePage> {
                         const SizedBox(height: AppSpacing.sm),
                         GlassCard(
                           child: InkWell(
-                            onTap: () => Navigator.pushNamed(context, Routes.subscriptionStatus, arguments: _orgId),
+                            onTap: () {
+                              final orgId = _orgId;
+                              if (orgId == null || orgId.isEmpty) {
+                                DialogHelpers.showError(
+                                  context,
+                                  'No organisation linked to this account.',
+                                );
+                                return;
+                              }
+                              Navigator.pushNamed(
+                                context,
+                                Routes.subscriptionStatus,
+                                arguments: orgId,
+                              );
+                            },
                             borderRadius: BorderRadius.circular(AppRadius.lg),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.xs),
