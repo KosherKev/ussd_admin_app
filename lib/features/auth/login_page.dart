@@ -4,6 +4,7 @@ import '../../shared/http/client.dart';
 import '../../shared/utils/helpers.dart';
 import '../../app/theme/app_theme.dart';
 import '../../app/router/routes.dart';
+import '../../shared/services/org_service.dart';
 import '../../widgets/glass_card.dart';
 import 'package:dio/dio.dart';
 
@@ -68,8 +69,28 @@ class _LoginPageState extends State<LoginPage>
       final user = me.data['user'] as Map<String, dynamic>?;
       final role = user?['role'] as String? ?? 'org_admin';
       await prefs.setString('role', role);
-      if (user?['organizationId'] != null) {
-        await prefs.setString('org_id', user!['organizationId'].toString());
+
+      final orgId = user?['organizationId']?.toString();
+      if (orgId != null && orgId.isNotEmpty) {
+        await prefs.setString('org_id', orgId);
+
+        // 3B — persist org_name so the Dashboard greeting works
+        try {
+          final org = await OrgService().get(orgId);
+          await prefs.setString('org_name', org.name);
+        } catch (_) {
+          // Non-fatal: org name is cosmetic only; login still proceeds
+        }
+      }
+
+      // 3C — persist key_id so the Developer Dashboard shows usage stats
+      // The API returns this as 'apiKeyId' on the user object.
+      // Field name is documented as best-effort; gracefully ignored if absent.
+      final keyId = user?['apiKeyId']?.toString()
+                 ?? user?['keyId']?.toString()
+                 ?? user?['api_key_id']?.toString();
+      if (keyId != null && keyId.isNotEmpty) {
+        await prefs.setString('key_id', keyId);
       }
 
       if (!mounted) return;

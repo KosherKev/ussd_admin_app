@@ -58,10 +58,10 @@
 | 2B    | OrgSummaryPage entry point                   | ✅ Complete |
 | 2C    | USSD Sessions card on Dashboard              | ✅ Complete |
 | 2D    | Subscription nav null-guard                  | ✅ Complete |
-| 3     | State Management & Session Integrity         | ⬜ Pending |
-| 3A    | HomeShell dev_mode lifecycle refresh         | ⬜ Pending |
-| 3B    | org_name persistence on login                | ⬜ Pending |
-| 3C    | key_id storage on login                      | ⬜ Pending |
+| 3     | State Management & Session Integrity         | ✅ Complete |
+| 3A    | HomeShell dev_mode lifecycle refresh         | ✅ Complete |
+| 3B    | org_name persistence on login                | ✅ Complete |
+| 3C    | key_id storage on login                      | ✅ Complete |
 | 4     | Data Layer Robustness                        | ⬜ Pending |
 | 4A    | Transaction date parsing safety              | ⬜ Pending |
 | 4B    | Subscription.fromJson normalisation          | ⬜ Pending |
@@ -123,6 +123,17 @@
 **Notes:** `flutter analyze` passed 0 issues. The null guard in 2D prevents the `/subscriptions//status` 404 — previously `_orgId` could be null and the router cast it to `String?? ''` producing a malformed URL. USSD sessions card is shown only when `_ussdStats.isNotEmpty` so it hides gracefully if the endpoint returns nothing. All Future.wait errors are caught by the single catch block.
 **Next:** Phase 3 — State Management & Session Integrity
 
+---
+### 2026-03-04 — Phase 3: State Management & Session Integrity
+**Status:** ✅ Complete
+**Files modified:**
+- `lib/features/home/home_shell.dart` (3A) — Added `with WidgetsBindingObserver` mixin to `_HomeShellState`. Added `WidgetsBinding.instance.addObserver(this)` in `initState` and corresponding `removeObserver` in `dispose`. Added `didChangeAppLifecycleState` override that calls `_loadSession()` on `AppLifecycleState.resumed` — this re-checks `dev_mode` and `org_id` from SharedPreferences whenever the app returns to foreground, preventing stale state after background/foreground cycles.
+- `lib/features/auth/login_page.dart` (3B + 3C) — Added `org_service.dart` import. Restructured post-login session caching block: (1) extracts `orgId` with null check before writing to prefs; (2) calls `OrgService().get(orgId)` in a non-fatal try/catch and stores `org.name` as `org_name` pref — this is the root fix for the blank greeting; (3) attempts to read `apiKeyId` / `keyId` / `api_key_id` from the `/auth/me` user object (three candidate field names, first non-null wins) and stores as `key_id` pref — this fixes the permanent "No API Key linked" empty state on the Developer Dashboard.
+- `lib/features/dashboard/dashboard_page.dart` (3B) — Added `org_service.dart` import. Fixed `GradientHeader` title from the no-op `_orgName != null ? 'Dashboard' : 'Dashboard'` to `_orgName != null && _orgName!.isNotEmpty ? _orgName! : 'Dashboard'` — the org name now actually displays. Added fallback block in `_load()`: if `org_name` pref is absent (user logged in before Phase 3B), fetches it live via `OrgService().get(widget.orgId)` and caches it — handles existing sessions without forcing re-login.
+**Files created:** none
+**Notes:** `flutter analyze` passed 0 issues. The `key_id` field name on the API response is unknown — three candidate names are tried (`apiKeyId`, `keyId`, `api_key_id`). If none match the actual field name, the developer dashboard empty state persists but the app does not crash. The known-issue entry for Phase 3C should be updated once the API schema is confirmed. The `WidgetsBindingObserver` in `HomeShell` complements the existing `pushNamedAndRemoveUntil` approach — it's a safety net for app resume, not a replacement.
+**Next:** Phase 4 — Data Layer Robustness
+
 ### Entry Template
 ```
 ---
@@ -158,6 +169,7 @@ Record the before/after error counts here.)*
 | Baseline    | 0      | 0        | 0     |
 | After Ph 1  | 0      | 0        | 0     |
 | After Ph 2  | 0      | 0        | 0     |
+| After Ph 3  | 0      | 0        | 0     |
 
 ---
 

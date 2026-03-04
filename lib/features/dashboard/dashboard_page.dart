@@ -6,6 +6,7 @@ import '../../shared/utils/helpers.dart';
 import '../../shared/models/transaction.dart';
 import '../../shared/models/ussd_session_stats.dart';
 import '../../shared/services/reports_service.dart';
+import '../../shared/services/org_service.dart';
 import '../../widgets/gradient_header.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/stats_card.dart';
@@ -48,6 +49,18 @@ class _DashboardPageState extends State<DashboardPage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       _orgName = prefs.getString('org_name');
+
+      // 3B fallback: if org_name was never persisted (user logged in before
+      // Phase 3B), fetch it now and cache it for subsequent loads.
+      if ((_orgName == null || _orgName!.isEmpty) && widget.orgId.isNotEmpty) {
+        try {
+          final org = await OrgService().get(widget.orgId);
+          _orgName = org.name;
+          await prefs.setString('org_name', org.name);
+        } catch (_) {
+          // Non-fatal — greeting falls back to 'Dashboard'
+        }
+      }
 
       // Fetch transactions and USSD sessions concurrently
       final results = await Future.wait([
@@ -117,7 +130,9 @@ class _DashboardPageState extends State<DashboardPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             GradientHeader(
-              title: _orgName != null ? 'Dashboard' : 'Dashboard',
+              title: _orgName != null && _orgName!.isNotEmpty
+                  ? _orgName!
+                  : 'Dashboard',
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [

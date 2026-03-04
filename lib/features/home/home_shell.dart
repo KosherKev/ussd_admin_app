@@ -20,7 +20,7 @@ class HomeShell extends StatefulWidget {
   State<HomeShell> createState() => _HomeShellState();
 }
 
-class _HomeShellState extends State<HomeShell> {
+class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   int    _index = 0;
   String _orgId = '';
   bool   _devMode = false;
@@ -30,7 +30,24 @@ class _HomeShellState extends State<HomeShell> {
   void initState() {
     super.initState();
     _index = widget.initialIndex;
+    WidgetsBinding.instance.addObserver(this);
     _loadSession();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Re-check dev_mode whenever the app comes back to foreground.
+  /// This handles the edge case where the session pref changes without
+  /// a full route replacement (e.g., background/foreground cycle).
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadSession();
+    }
   }
 
   Future<void> _loadSession() async {
