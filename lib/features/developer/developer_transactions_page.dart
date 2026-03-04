@@ -1,30 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme/app_theme.dart';
 import '../../shared/utils/helpers.dart';
 import '../../shared/models/transaction.dart';
 import '../../shared/services/reports_service.dart';
-import '../../widgets/gradient_header.dart';
-import '../../widgets/glass_card.dart';
+import '../../widgets/app_card.dart';
+import '../../widgets/filter_chips_row.dart';
+import '../../widgets/status_chip.dart';
 
+// ---------------------------------------------------------------------------
+// DeveloperTransactionsPage — Phase 11
+//
+// Updated to match the Refined Financial Brutalism design system:
+// - GradientHeader → Instrument Serif page-strip
+// - GlassCard cards → AppCard accent variant with 3px status left bar
+// - Old chip ListView → FilterChipsRow widget
+// - Amounts use Instrument Serif italic
+// ---------------------------------------------------------------------------
 class DeveloperTransactionsPage extends StatefulWidget {
   const DeveloperTransactionsPage({super.key});
 
   @override
-  State<DeveloperTransactionsPage> createState() => _DeveloperTransactionsPageState();
+  State<DeveloperTransactionsPage> createState() =>
+      _DeveloperTransactionsPageState();
 }
 
-class _DeveloperTransactionsPageState extends State<DeveloperTransactionsPage> {
+class _DeveloperTransactionsPageState
+    extends State<DeveloperTransactionsPage> {
   final _service = ReportsService();
 
-  List<Transaction> _items = [];
-  bool    _loading = true;
+  List<Transaction> _items   = [];
+  bool    _loading    = true;
   bool    _loadingMore = false;
   String? _error;
-  int     _page = 1;
+  int     _page  = 1;
   int     _total = 0;
   String? _statusFilter;
-  DateTime? _from;
-  DateTime? _to;
 
   @override
   void initState() {
@@ -38,31 +49,28 @@ class _DeveloperTransactionsPageState extends State<DeveloperTransactionsPage> {
     } else {
       setState(() => _loadingMore = true);
     }
-
     try {
       final result = await _service.getTransactions(
-        page:      reset ? 1 : _page,
-        limit:     20,
-        status:    _statusFilter,
-        startDate: _from,
-        endDate:   _to,
+        page:   reset ? 1 : _page,
+        limit:  20,
+        status: _statusFilter,
       );
-
       if (mounted) {
         setState(() {
-          if (reset) {
-            _items = result.items;
-          } else {
-            _items.addAll(result.items);
-          }
-          _total   = result.total;
-          _page    = (reset ? 1 : _page) + 1;
+          if (reset) { _items = result.items; } else { _items.addAll(result.items); }
+          _total       = result.total;
+          _page        = (reset ? 1 : _page) + 1;
           _loading     = false;
           _loadingMore = false;
         });
       }
     } catch (e) {
-      if (mounted) setState(() { _error = ErrorHandlers.getErrorMessage(e); _loading = false; _loadingMore = false; });
+      if (mounted) {
+        setState(() {
+          _error = ErrorHandlers.getErrorMessage(e);
+          _loading = _loadingMore = false;
+        });
+      }
     }
   }
 
@@ -71,98 +79,131 @@ class _DeveloperTransactionsPageState extends State<DeveloperTransactionsPage> {
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
+
     return Scaffold(
       backgroundColor: c.background,
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, 0),
+      body: SafeArea(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            GradientHeader(
-              title: 'Transactions',
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
+
+            // ── Page strip header ──────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.sm),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (_loading)
-                    const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)))
-                  else
-                    IconButton(icon: const Icon(Icons.refresh, color: Colors.white), onPressed: () => _load()),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'DEVELOPER PORTAL',
+                          style: AppTypography.labelMono(c.primaryAmber)
+                              .copyWith(letterSpacing: 0.12),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Transactions',
+                          style: GoogleFonts.instrumentSerif(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w400,
+                            fontStyle: FontStyle.italic,
+                            color: c.textPrimary,
+                            height: 1.1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Refresh button
+                  GestureDetector(
+                    onTap: _loading ? null : () => _load(),
+                    child: Container(
+                      width: 38, height: 38,
+                      decoration: BoxDecoration(
+                        color: c.bgSurface,
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        border: Border.all(color: c.borderMid, width: 1),
+                      ),
+                      child: _loading
+                          ? Padding(
+                              padding: const EdgeInsets.all(10),
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 1.5, color: c.primaryAmber))
+                          : Icon(Icons.refresh_rounded,
+                              size: 17, color: c.textSecondary),
+                    ),
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: AppSpacing.sm),
+            Divider(height: 1, color: c.borderSubtle),
 
-            // Status filter chips
-            SizedBox(
-              height: 36,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: ['All', 'completed', 'processing', 'failed'].map((s) {
-                  final sel = (s == 'All' && _statusFilter == null) || _statusFilter == s;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: AppSpacing.xs),
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() => _statusFilter = s == 'All' ? null : s);
-                        _load();
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xxs),
-                        decoration: BoxDecoration(
-                          color: sel ? c.primaryAmber : c.surfaceMid,
-                          borderRadius: BorderRadius.circular(AppRadius.full),
-                        ),
-                        child: Text(
-                          StatusHelpers.formatStatus(s),
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color: sel ? (Theme.of(context).brightness == Brightness.dark ? Colors.black : Colors.white) : c.textSecondary,
-                            fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
+            // ── Status filter chips ────────────────────────────────────
+            const SizedBox(height: AppSpacing.sm),
+            FilterChipsRow(
+              items:    const ['completed', 'processing', 'failed'],
+              selected: _statusFilter,
+              onSelect: (val) {
+                setState(() => _statusFilter = val);
+                _load();
+              },
             ),
-
             const SizedBox(height: AppSpacing.sm),
 
+            // ── Transaction list ────────────────────────────────────────
             Expanded(
               child: _loading
                   ? Center(child: CircularProgressIndicator(color: c.primaryAmber))
                   : _error != null
-                      ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          Icon(Icons.error_outline, size: 56, color: c.error),
-                          const SizedBox(height: AppSpacing.md),
-                          Text(_error!, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: c.textSecondary), textAlign: TextAlign.center),
-                          const SizedBox(height: AppSpacing.lg),
-                          ElevatedButton(onPressed: () => _load(), child: const Text('Retry')),
-                        ]))
+                      ? Center(child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.error_outline, size: 56, color: c.error),
+                            const SizedBox(height: AppSpacing.md),
+                            Text(_error!,
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: c.textSecondary),
+                              textAlign: TextAlign.center),
+                            const SizedBox(height: AppSpacing.lg),
+                            ElevatedButton(
+                                onPressed: () => _load(),
+                                child: const Text('Retry')),
+                          ]))
                       : _items.isEmpty
-                          ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                              Icon(Icons.receipt_long_outlined, size: 56, color: c.textTertiary),
-                              const SizedBox(height: AppSpacing.md),
-                              Text('No transactions found', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: c.textSecondary)),
-                            ]))
+                          ? Center(child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.receipt_long_outlined,
+                                    size: 56, color: c.textTertiary),
+                                const SizedBox(height: AppSpacing.md),
+                                Text('No transactions found',
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(color: c.textSecondary)),
+                              ]))
                           : RefreshIndicator(
                               onRefresh: () => _load(),
+                              color: c.primaryAmber,
                               child: ListView.separated(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.md),
                                 itemCount: _items.length + (_hasMore ? 1 : 0),
-                                separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: AppSpacing.xs),
                                 itemBuilder: (ctx, i) {
                                   if (i == _items.length) {
-                                    // Guard: only trigger if not already loading more.
-                                    // Deferred via addPostFrameCallback so this never
-                                    // fires mid-build, preventing duplicate API calls
-                                    // on list rebuilds (orientation, parent setState, etc.)
                                     if (!_loadingMore && _hasMore) {
-                                      WidgetsBinding.instance.addPostFrameCallback(
-                                        (_) { if (mounted) _load(reset: false); },
-                                      );
+                                      WidgetsBinding.instance
+                                          .addPostFrameCallback((_) {
+                                        if (mounted) _load(reset: false);
+                                      });
                                     }
                                     return Center(child: Padding(
                                       padding: const EdgeInsets.all(AppSpacing.md),
-                                      child: CircularProgressIndicator(color: c.primaryAmber),
+                                      child: CircularProgressIndicator(
+                                          color: c.primaryAmber),
                                     ));
                                   }
                                   return _buildCard(_items[i], c);
@@ -170,26 +211,64 @@ class _DeveloperTransactionsPageState extends State<DeveloperTransactionsPage> {
                               ),
                             ),
             ),
+
+            const SizedBox(height: AppSpacing.xs),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCard(Transaction t, AppColors c) => GlassCard(
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(t.paymentType, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: c.textPrimary, fontWeight: FontWeight.w600)),
-          Text(DateFormatters.formatRelative(t.initiatedAt), style: Theme.of(context).textTheme.bodySmall?.copyWith(color: c.textSecondary)),
-        ])),
-        StatusHelpers.buildStatusBadge(t.status),
+  // ── Transaction card — AppCard accent variant ───────────────────────────
+  Widget _buildCard(Transaction t, AppColors c) {
+    final s        = t.status.toLowerCase();
+    final barColor = s.contains('complet') || s.contains('success')
+        ? c.success
+        : s.contains('fail') || s.contains('error') || s.contains('reject')
+            ? c.error
+            : c.warning;
+
+    return AppCard(
+      variant:     AppCardVariant.accent,
+      accentColor: barColor,
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      child: Row(children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                t.paymentType,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: c.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                t.transactionRef,
+                style: AppTypography.labelMono(c.textTertiary)
+                    .copyWith(fontSize: 10),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Text(
+            CurrencyFormatters.formatNumber(t.amount.round()),
+            style: GoogleFonts.instrumentSerif(
+              fontSize: 18,
+              color: c.textPrimary,
+              height: 1.0,
+            ),
+          ),
+          const SizedBox(height: 4),
+          StatusChip(status: t.status, compact: true),
+        ]),
       ]),
-      const SizedBox(height: AppSpacing.xs),
-      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Text(CurrencyFormatters.formatGHS(t.amount), style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: c.textPrimary, fontWeight: FontWeight.w700)),
-        Text(t.transactionRef, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: c.textTertiary), overflow: TextOverflow.ellipsis),
-      ]),
-    ]),
-  );
+    );
+  }
 }
