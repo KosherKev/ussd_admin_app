@@ -22,6 +22,7 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
   final _service = PaymentTypeService();
   List<PaymentType> _paymentTypes = [];
   bool _loading = true;
+  bool _toggling = false; // guards the enable/disable action
   String? _error;
 
   @override
@@ -56,15 +57,14 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
   }
 
   Future<void> _toggleEnabled(PaymentType type) async {
+    if (_toggling) return; // prevent double-tap
+    setState(() => _toggling = true);
     try {
-      DialogHelpers.showLoading(context, message: 'Updating...');
-
       await _service.update(widget.orgId, type.typeId, {
         'enabled': !type.enabled,
       });
 
       if (mounted) {
-        DialogHelpers.hideLoading(context);
         DialogHelpers.showSuccess(
           context,
           '${type.name} ${!type.enabled ? 'enabled' : 'disabled'}',
@@ -73,9 +73,10 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
       }
     } catch (e) {
       if (mounted) {
-        DialogHelpers.hideLoading(context);
         ErrorHandlers.handleError(context, e);
       }
+    } finally {
+      if (mounted) setState(() => _toggling = false);
     }
   }
 
@@ -327,8 +328,14 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => _toggleEnabled(type),
-                  icon: Icon(type.enabled ? Icons.toggle_off_outlined : Icons.toggle_on_outlined, size: 18),
+                  onPressed: _toggling ? null : () => _toggleEnabled(type),
+                  icon: _toggling
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)),
+                        )
+                      : Icon(type.enabled ? Icons.toggle_off_outlined : Icons.toggle_on_outlined, size: 18),
                   label: Text(type.enabled ? 'Disable' : 'Enable'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: type.enabled ? c.warning : c.success,

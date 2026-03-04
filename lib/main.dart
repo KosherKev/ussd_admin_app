@@ -4,6 +4,10 @@ import 'app/theme/app_theme.dart';
 import 'app/router/app_router.dart' as app_router;
 import 'app/router/routes.dart';
 
+/// Global navigator key — used by the Dio 401 interceptor to redirect to
+/// login without a BuildContext.
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
@@ -62,6 +66,7 @@ class AppState extends State<App> {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      navigatorKey: navigatorKey,
       title: 'PayHub Admin',
       theme: buildLightTheme(),
       darkTheme: buildDarkTheme(),

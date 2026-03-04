@@ -6,6 +6,7 @@ library;
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
 
 // =============================================================================
 // DATE & TIME FORMATTING
@@ -432,7 +433,11 @@ class DialogHelpers {
     );
   }
 
-  /// Show loading dialog
+  /// Show loading dialog.
+  /// @deprecated Use in-widget loading state (setState + bool flag) instead.
+  /// Modal loading dialogs leak if the caller widget is disposed before
+  /// hideLoading() is called. This method is kept only for reference.
+  @Deprecated('Use in-widget _loading / _saving state instead of modal loading dialogs.')
   static void showLoading(BuildContext context, {String message = 'Loading...'}) {
     showDialog(
       context: context,
@@ -452,7 +457,9 @@ class DialogHelpers {
     );
   }
 
-  /// Hide loading dialog
+  /// Hide loading dialog.
+  /// @deprecated Paired with the deprecated showLoading — avoid both.
+  @Deprecated('Use in-widget _loading / _saving state instead of modal loading dialogs.')
   static void hideLoading(BuildContext context) {
     Navigator.of(context, rootNavigator: true).pop();
   }
@@ -463,48 +470,56 @@ class DialogHelpers {
 // =============================================================================
 
 class ErrorHandlers {
-  /// Extract user-friendly error message from exception
+  /// Extract user-friendly error message from exception.
+  /// Uses proper DioException type checking — never string-matching.
   static String getErrorMessage(dynamic error) {
     if (error == null) return 'An unknown error occurred';
-    
-    // DioException handling
-    if (error.toString().contains('DioException')) {
-      if (error.toString().contains('Network')) {
-        return 'Network error. Please check your connection.';
+
+    if (error is DioException) {
+      // Network / connectivity errors
+      if (error.type == DioExceptionType.connectionTimeout ||
+          error.type == DioExceptionType.receiveTimeout ||
+          error.type == DioExceptionType.sendTimeout) {
+        return 'Request timed out. Please check your connection and try again.';
       }
-      if (error.toString().contains('timeout')) {
-        return 'Request timeout. Please try again.';
+      if (error.type == DioExceptionType.connectionError) {
+        return 'Network error. Please check your internet connection.';
       }
-      if (error.toString().contains('401')) {
-        return 'Unauthorized. Please log in again.';
+      if (error.type == DioExceptionType.cancel) {
+        return 'Request was cancelled.';
       }
-      if (error.toString().contains('403')) {
-        return 'Access denied. You do not have permission.';
+
+      // Server responded — extract server message if available
+      final code = error.response?.statusCode;
+      String? serverMsg;
+      final data = error.response?.data;
+      if (data is Map) {
+        serverMsg = data['message']?.toString() ??
+                    data['error']?.toString();
       }
-      if (error.toString().contains('404')) {
-        return 'Resource not found.';
-      }
-      if (error.toString().contains('500')) {
-        return 'Server error. Please try again later.';
-      }
-      if (error.toString().contains('502')) {
-        return 'Bad gateway. Please try again later.';
-      }
-      if (error.toString().contains('503')) {
-        return 'Service unavailable. Please try again later.';
-      }
-      if (error.toString().contains('504')) {
-        return 'Gateway timeout. Please try again later.';
+
+      switch (code) {
+        case 400: return serverMsg ?? 'Invalid request. Please check your input.';
+        case 401: return serverMsg ?? 'Session expired. Please sign in again.';
+        case 403: return serverMsg ?? 'Access denied. You do not have permission.';
+        case 404: return serverMsg ?? 'The requested resource was not found.';
+        case 409: return serverMsg ?? 'Conflict. This resource already exists.';
+        case 422: return serverMsg ?? 'Validation error. Please check your input.';
+        case 429: return serverMsg ?? 'Too many requests. Please wait and try again.';
+        default:
+          if (code != null && code >= 500) {
+            return serverMsg ?? 'Server error. Please try again later.';
+          }
+          return serverMsg ?? 'Request failed (HTTP $code).';
       }
     }
-    
-    // Try to extract message from error
-    final errorStr = error.toString();
-    if (errorStr.contains('Exception: ')) {
-      return errorStr.split('Exception: ').last;
+
+    // Standard Dart exceptions
+    final msg = error.toString();
+    if (msg.startsWith('Exception: ')) {
+      return msg.substring('Exception: '.length);
     }
-    
-    return errorStr;
+    return msg;
   }
 
   /// Handle API error and show snackbar
