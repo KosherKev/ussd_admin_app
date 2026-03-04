@@ -67,12 +67,12 @@
 | 4B    | Subscription.fromJson normalisation          | ✅ Complete |
 | 4C    | Paged.fromJson itemsKey param                | ✅ Complete |
 | 4D    | PaymentType single-fetch endpoint            | ✅ Complete |
-| 5     | UX Logic Gaps & Interaction Bugs             | ⬜ Pending |
-| 5A    | TransactionsPage chip auto-apply             | ⬜ Pending |
-| 5B    | Dashboard chart day labels fix               | ⬜ Pending |
-| 5C    | Infinite scroll duplicate load guard         | ⬜ Pending |
-| 5D    | Export CSV page-scope label                  | ⬜ Pending |
-| 5E    | PaymentTypeEdit white text light mode fix    | ⬜ Pending |
+| 5     | UX Logic Gaps & Interaction Bugs             | ✅ Complete |
+| 5A    | TransactionsPage chip auto-apply             | ✅ Complete |
+| 5B    | Dashboard chart day labels fix               | ✅ Complete |
+| 5C    | Infinite scroll duplicate load guard         | ✅ Complete |
+| 5D    | Export CSV page-scope label                  | ✅ Complete |
+| 5E    | PaymentTypeEdit white text light mode fix    | ✅ Complete |
 | 6     | Design Token Overhaul                        | ⬜ Pending |
 | 7     | Shared Widget Replacement                    | ⬜ Pending |
 | 7A    | AppCard widget                               | ⬜ Pending |
@@ -148,6 +148,20 @@
 **Notes:** `flutter analyze` passed 0 issues. The `_parseDate` helper pattern is now consistent across both `Transaction` and `Subscription` — if other models need date safety in Phase 5+, the same helper should be added. The `Paged.fromJson` change is backwards-compatible — no existing call sites needed updating. The `PaymentTypeService.get` method assumes the API supports the single-resource endpoint; if it returns 404, the edit page will navigate back with an error message (same behaviour as before but without the all-types overhead).
 **Next:** Phase 5 — UX Logic Gaps & Interaction Bugs
 
+---
+### 2026-03-04 — Phase 5: UX Logic Gaps & Interaction Bugs
+**Status:** ✅ Complete
+**Files modified:**
+- `lib/features/reports/transactions_page.dart` (5A, 5D) — Status chip `onTap` now calls `_fetch(page: 1)` immediately after `setState`, matching the auto-apply behaviour already present in `DeveloperTransactionsPage` and `WebhooksListPage`. Export icon button now has `tooltip: 'Export current page as CSV'`. Success message now states `'Page $page copied — N rows (N of total total)'` so users know they're not getting the full dataset.
+- `lib/features/dashboard/dashboard_page.dart` (5B) — `_buildWeeklyChart` replaced static day-of-week abbreviation labels (`['Mo','Tu','We',...]`) with two-line labels: abbreviated weekday from `DateFormatters.formatShortWeekday` + zero-padded date from `DateFormatters.formatShortDate` (e.g. "Wed / 05 Mar"). Text style gets `height: 1.3` for compact two-line rendering. The transaction count that was previously in the label is dropped — bar height already encodes relative magnitude.
+- `lib/shared/utils/helpers.dart` (5B) — Added `DateFormatters.formatShortWeekday(DateTime?)` returning 3-letter weekday ("Mon"–"Sun") and `DateFormatters.formatShortDate(DateTime?)` returning zero-padded day + 3-letter month ("05 Mar"). Both handle null input safely.
+- `lib/features/developer/developer_transactions_page.dart` (5C) — Infinite scroll sentinel item now uses `WidgetsBinding.instance.addPostFrameCallback` to defer `_load(reset: false)` out of the build phase, and guards with `!_loadingMore && _hasMore` before scheduling. Prevents duplicate API calls on every list rebuild (scroll jank, orientation change, parent setState).
+- `lib/features/developer/webhooks_list_page.dart` (5C) — Same `addPostFrameCallback` + `_loadingMore && _hasMore` guard applied.
+- `lib/features/payments/payment_type_edit_page.dart` (5E) — Replaced `AppColors.white` with `c.textPrimary` in all three GlassCard section headers ("Type ID", "Basic Information", "Amount Limits"). In light mode these were white text on a near-white background — invisible. `c.textPrimary` adapts correctly to both themes.
+**Files created:** none
+**Notes:** `flutter analyze` passed 0 issues at both mid-phase and final check. The transaction count removed from the weekly chart label (was `'$label\n${e.value}'`) is a minor information loss — if needed it can be shown in a tooltip on bar tap in the UI phase.
+**Next:** Phase 6 — Design Token Overhaul
+
 ### Entry Template
 ```
 ---
@@ -185,6 +199,7 @@ Record the before/after error counts here.)*
 | After Ph 2  | 0      | 0        | 0     |
 | After Ph 3  | 0      | 0        | 0     |
 | After Ph 4  | 0      | 0        | 0     |
+| After Ph 5  | 0      | 0        | 0     |
 
 ---
 

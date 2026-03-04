@@ -328,13 +328,15 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildWeeklyChart(AppColors c) {
     final entries = _dailyCounts.entries.toList()..sort((a, b) => a.key.compareTo(b.key));
     final maxVal  = entries.isEmpty ? 0 : entries.map((e) => e.value).reduce((a, b) => a > b ? a : b);
-    const labels  = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: entries.map((e) {
         final ratio  = maxVal == 0 ? 0.0 : (e.value / maxVal);
         final height = 80 * ratio + 6.0;
-        final label  = labels[(e.key.weekday - 1) % 7];
+        // Show abbreviated weekday + short date (e.g. "Wed\n05 Mar")
+        // so the user can identify which specific day each bar represents.
+        final dayLabel  = DateFormatters.formatShortWeekday(e.key);   // "Wed"
+        final dateLabel = DateFormatters.formatShortDate(e.key);      // "05 Mar"
         return Expanded(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             AnimatedContainer(
@@ -347,9 +349,14 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
             ),
             const SizedBox(height: AppSpacing.xxs),
-            Text('$label\n${e.value}',
+            Text(
+              '$dayLabel\n$dateLabel',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(color: c.textTertiary),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: c.textTertiary,
+                fontSize: 9,
+                height: 1.3,
+              ),
             ),
           ]),
         );

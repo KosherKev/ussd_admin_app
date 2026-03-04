@@ -74,6 +74,20 @@ class DateFormatters {
     final now = DateTime.now();
     return DateTime(now.year, now.month + 1, 0, 23, 59, 59);
   }
+
+  /// Returns abbreviated weekday name, e.g. "Wed"
+  static String formatShortWeekday(DateTime? date) {
+    if (date == null) return '';
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return days[(date.weekday - 1) % 7];
+  }
+
+  /// Returns zero-padded day + abbreviated month, e.g. "05 Mar"
+  static String formatShortDate(DateTime? date) {
+    if (date == null) return '';
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return '${date.day.toString().padLeft(2, '0')} ${months[date.month - 1]}';
+  }
 }
 
 // =============================================================================

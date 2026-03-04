@@ -152,8 +152,17 @@ class _WebhooksListPageState extends State<WebhooksListPage> {
                                 separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
                                 itemBuilder: (ctx, i) {
                                   if (i == _items.length) {
-                                    if (!_loadingMore) _load(reset: false);
-                                    return Center(child: Padding(padding: const EdgeInsets.all(AppSpacing.md), child: CircularProgressIndicator(color: c.primaryAmber)));
+                                    // Guard: defer load to post-frame and check _loadingMore
+                                    // to prevent duplicate calls on every list rebuild.
+                                    if (!_loadingMore && _hasMore) {
+                                      WidgetsBinding.instance.addPostFrameCallback(
+                                        (_) { if (mounted) _load(reset: false); },
+                                      );
+                                    }
+                                    return Center(child: Padding(
+                                      padding: const EdgeInsets.all(AppSpacing.md),
+                                      child: CircularProgressIndicator(color: c.primaryAmber),
+                                    ));
                                   }
                                   return _buildCard(_items[i], c);
                                 },

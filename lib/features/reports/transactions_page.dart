@@ -99,7 +99,11 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)))
                 else
                   IconButton(icon: const Icon(Icons.refresh, color: Colors.white), onPressed: () => _fetch(page: _paged?.page ?? 1)),
-                IconButton(icon: const Icon(Icons.file_download_outlined, color: Colors.white), onPressed: _exportCsv),
+                IconButton(
+                    icon: const Icon(Icons.file_download_outlined, color: Colors.white),
+                    tooltip: 'Export current page as CSV',
+                    onPressed: _exportCsv,
+                  ),
               ],
             ),
           ),
@@ -122,7 +126,12 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       return Padding(
                         padding: const EdgeInsets.only(right: AppSpacing.xs),
                         child: GestureDetector(
-                          onTap: () { setState(() => _status = s); },
+                          onTap: () {
+                            setState(() => _status = s);
+                            // Auto-apply on status chip tap — consistent with
+                            // DeveloperTransactionsPage and WebhooksListPage.
+                            _fetch(page: 1);
+                          },
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
                             decoration: BoxDecoration(
@@ -267,6 +276,12 @@ class _TransactionsPageState extends State<TransactionsPage> {
     }
     await Clipboard.setData(ClipboardData(text: buffer.toString()));
     if (!mounted) return;
-    DialogHelpers.showSuccess(context, 'CSV copied to clipboard');
+    // Clearly state page scope so user knows this is not the full dataset.
+    final page  = _paged!.page;
+    final total = _paged!.total;
+    DialogHelpers.showSuccess(
+      context,
+      'Page $page copied — ${items.length} rows (${items.length} of $total total)',
+    );
   }
 }

@@ -183,7 +183,7 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
                             Text(
                               'Type ID',
                               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    color: AppColors.white,
+                                    color: c.textPrimary,
                                   ),
                             ),
                             const SizedBox(height: AppSpacing.xs),
@@ -226,7 +226,7 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
                           Text(
                             'Basic Information',
                             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: AppColors.white,
+                                  color: c.textPrimary,
                                 ),
                           ),
                           const SizedBox(height: AppSpacing.md),
@@ -324,7 +324,7 @@ class _PaymentTypeEditPageState extends State<PaymentTypeEditPage> {
                           Text(
                             'Amount Limits',
                             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: AppColors.white,
+                                  color: c.textPrimary,
                                 ),
                           ),
                           const SizedBox(height: AppSpacing.xs),

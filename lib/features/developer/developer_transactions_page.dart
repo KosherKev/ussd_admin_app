@@ -151,7 +151,15 @@ class _DeveloperTransactionsPageState extends State<DeveloperTransactionsPage> {
                                 separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
                                 itemBuilder: (ctx, i) {
                                   if (i == _items.length) {
-                                    if (!_loadingMore) _load(reset: false);
+                                    // Guard: only trigger if not already loading more.
+                                    // Deferred via addPostFrameCallback so this never
+                                    // fires mid-build, preventing duplicate API calls
+                                    // on list rebuilds (orientation, parent setState, etc.)
+                                    if (!_loadingMore && _hasMore) {
+                                      WidgetsBinding.instance.addPostFrameCallback(
+                                        (_) { if (mounted) _load(reset: false); },
+                                      );
+                                    }
                                     return Center(child: Padding(
                                       padding: const EdgeInsets.all(AppSpacing.md),
                                       child: CircularProgressIndicator(color: c.primaryAmber),
