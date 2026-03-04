@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../app/theme/app_theme.dart';
 import '../../shared/http/client.dart';
 import '../../shared/utils/helpers.dart';
+import '../../app/router/routes.dart'; // Added this import
 import '../../shared/services/org_service.dart';
 import '../../widgets/gradient_header.dart';
 import '../../widgets/glass_card.dart';
@@ -24,6 +25,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String? _orgId;
   bool _sendReceiptSms = false;
   bool _savingOrg = false;
+  bool _devMode = false;
 
   final _phoneController = TextEditingController();
 
@@ -78,6 +80,7 @@ class _ProfilePageState extends State<ProfilePage> {
           _orgId           = orgId;
           _sendReceiptSms  = smsEnabled;
           _phoneController.text = orgPhone ?? '';
+          _devMode         = prefs.getBool('dev_mode') ?? false; // Load dev_mode from prefs
           _loading         = false;
         });
       }
@@ -150,6 +153,36 @@ class _ProfilePageState extends State<ProfilePage> {
                           ],
                         ])),
 
+                        // Subscription Status Link (Added visual aspect)
+                        const SizedBox(height: AppSpacing.lg),
+                        Text('Subscription', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: c.textSecondary)),
+                        const SizedBox(height: AppSpacing.sm),
+                        GlassCard(
+                          child: InkWell(
+                            onTap: () => Navigator.pushNamed(context, Routes.subscriptionStatus, arguments: _orgId),
+                            borderRadius: BorderRadius.circular(AppRadius.lg),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.xs),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.workspace_premium_outlined, color: c.primaryAmber, size: 24),
+                                  const SizedBox(width: AppSpacing.md),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('Subscription Status', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: c.textPrimary, fontWeight: FontWeight.w600)),
+                                        Text('View your current plan and limits', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: c.textSecondary)),
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(Icons.chevron_right_rounded, color: c.textTertiary),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
                         // Organisation settings (only for org_admin with an org)
                         if (_orgId != null && _orgId!.isNotEmpty && _role == 'org_admin') ...[
                           const SizedBox(height: AppSpacing.lg),
@@ -203,6 +236,34 @@ class _ProfilePageState extends State<ProfilePage> {
                           Switch(
                             value: isDark,
                             onChanged: (v) => appState?.setThemeMode(v ? ThemeMode.dark : ThemeMode.light),
+                          ),
+                        ])),
+
+                        const SizedBox(height: AppSpacing.lg),
+
+                        // Debug role toggle (to easily switch to developer view)
+                        Text('Developer Options', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: c.textSecondary)),
+                        const SizedBox(height: AppSpacing.sm),
+                        GlassCard(child: Row(children: [
+                          Icon(Icons.developer_mode_outlined, size: 20, color: c.textSecondary),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Developer Mode', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: c.textPrimary)),
+                              Text('Toggle role to test developer portal', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: c.textSecondary)),
+                            ],
+                          )),
+                          Switch(
+                            value: _devMode,
+                            onChanged: (v) async {
+                              final rootContext = context;
+                              final prefs = await SharedPreferences.getInstance();
+                              await prefs.setBool('dev_mode', v);
+                              if (rootContext.mounted) {
+                                Navigator.pushNamedAndRemoveUntil(rootContext, Routes.home, (r) => false);
+                              }
+                            },
                           ),
                         ])),
 

@@ -10,7 +10,6 @@ import '../settings/profile_page.dart';
 import '../developer/developer_dashboard_page.dart';
 import '../developer/developer_transactions_page.dart';
 import '../developer/webhooks_list_page.dart';
-import '../developer/developer_settings_page.dart';
 
 class HomeShell extends StatefulWidget {
   final int initialIndex;
@@ -22,8 +21,8 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int    _index = 0;
-  String _role  = 'org_admin';
   String _orgId = '';
+  bool   _devMode = false;
   bool   _loading = true;
 
   @override
@@ -37,14 +36,14 @@ class _HomeShellState extends State<HomeShell> {
     final prefs = await SharedPreferences.getInstance();
     if (mounted) {
       setState(() {
-        _role   = prefs.getString('role')   ?? 'org_admin';
-        _orgId  = prefs.getString('org_id') ?? '';
+        _orgId   = prefs.getString('org_id') ?? '';
+        _devMode = prefs.getBool('dev_mode') ?? false;
         _loading = false;
       });
     }
   }
 
-  bool get _isDeveloper => _role == 'developer';
+  bool get _isDeveloper => _devMode;
 
   // ---------- Org Admin tabs ----------
   List<Widget> get _orgAdminTabs => [
@@ -82,7 +81,7 @@ class _HomeShellState extends State<HomeShell> {
     const DeveloperDashboardPage(),
     const DeveloperTransactionsPage(),
     const WebhooksListPage(),
-    const DeveloperSettingsPage(),
+    const ProfilePage(),
   ];
 
   List<NavigationDestination> get _developerDests => const [
@@ -102,9 +101,9 @@ class _HomeShellState extends State<HomeShell> {
       label: 'Webhooks',
     ),
     NavigationDestination(
-      icon:         Icon(Icons.key_outlined),
-      selectedIcon: Icon(Icons.key_rounded),
-      label: 'API Key',
+      icon:         Icon(Icons.settings_outlined),
+      selectedIcon: Icon(Icons.settings_rounded),
+      label: 'Settings',
     ),
   ];
 

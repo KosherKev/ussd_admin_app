@@ -8,9 +8,9 @@ String baseUrl() {
   if (kIsWeb) return 'http://localhost:$_port/api';
   switch (defaultTargetPlatform) {
     case TargetPlatform.android:
-      return 'https://pay.bevin.com/api';
+      return 'https://pay.bevingh.com/api';
     default:
-      return 'https://pay.bevin.com/api';
+      return 'https://pay.bevingh.com/api';
   }
 }
 
