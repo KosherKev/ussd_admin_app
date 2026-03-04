@@ -96,7 +96,12 @@ Their JWT contains `role: "org_admin"` and `organizationId: "<their_org_id>"`. T
 4. Check subscription expiry
    GET /api/subscriptions/:id/status
    →  { subscription: { endDate: "2026-03-28" }, ussdEnabled: true }
-   →  Contact super admin to renew before endDate
+   →  If approaching expiry, initiate a renewal payment (see Flow 5)
+
+5. Check available USSD numbers (if not yet assigned one)
+   GET /api/ussd/free-codes
+   →  { total: 994, codes: [1, 2, 3, 4, 6, 7, ...] }
+   →  Share a preferred number with the super admin — they will assign it via PATCH /api/orgs/:id
 ```
 
 ---
@@ -143,7 +148,67 @@ Their JWT contains `role: "org_admin"` and `organizationId: "<their_org_id>"`. T
 
 ---
 
-## Flow 5 — Resolving a Disputed Payment
+## Flow 5 — Renewing a Subscription
+
+**Trigger:** Subscription is approaching its end date, or status has flipped to `expired`.
+
+```
+1. Check current status
+   GET /api/subscriptions/:id/status
+   →  { subscription: { status: "expired" | "active", endDate: "..." }, ussdEnabled: false | true }
+
+2. Initiate a subscription payment (headless mobile money charge — no redirect)
+   POST /api/subscriptions/:id/pay
+   Headers: { Authorization: "Bearer <JWT>" }
+   Body: {
+     phone:        "0244111111",          ← payer's mobile money number
+     network:      "MTN",                 ← MTN | VODAFONE | AIRTELTIGO
+     billingModel: "monthly"              ← monthly | annual_prepaid | annual_monthly
+   }
+   →  201: {
+        transactionRef: "TXN-XYZSCH-...",
+        amount:         100,
+        currency:       "GHS",
+        billingModel:   "monthly",
+        billingPeriod:  "monthly",
+        commitment:     "monthly",
+        status:         "pending" | "send_otp",
+        requiresOtp:    false | true,
+        _links: {
+          status:    "/api/v1/payments/TXN-.../status",
+          submitOtp: "/api/v1/subscriptions/:id/pay/otp"   ← only present when requiresOtp: true
+        }
+      }
+
+3a. If requiresOtp is false (push prompt sent to phone)
+   →  Customer approves the debit on their phone
+   →  PayHub webhook confirms payment → subscription is activated automatically by the super admin
+       via POST /api/subscriptions/:id/activate-after-payment
+
+3b. If requiresOtp is true (network requires OTP instead of push)
+   →  An OTP is sent to the phone number
+   →  Submit it:
+      POST /api/subscriptions/:id/pay/otp
+      Body: { transactionRef: "TXN-XYZSCH-...", otp: "847291" }
+      →  200: { success: true, transactionRef: "...", status: "pending" | "success" }
+   →  Subscription is activated after super admin confirms the completed transaction
+
+4. Confirm subscription is active
+   GET /api/subscriptions/:id/status
+   →  { subscription: { status: "active", endDate: "2026-04-28" }, ussdEnabled: true }
+```
+
+**Billing models explained:**
+
+| `billingModel` | What is charged | Period added |
+|----------------|-----------------|--------------|
+| `monthly` | `monthlyFee` (default GHS 100) | 1 month |
+| `annual_prepaid` | `annualFee` (default 12 × monthly) | 12 months |
+| `annual_monthly` | `monthlyFee` | 1 month (annual commitment tracked) |
+
+---
+
+## Flow 6 — Resolving a Disputed Payment
 
 **Trigger:** A parent claims they paid but their account is still showing as outstanding.
 
