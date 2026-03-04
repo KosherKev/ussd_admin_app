@@ -20,29 +20,39 @@ class HomeShell extends StatefulWidget {
   State<HomeShell> createState() => _HomeShellState();
 }
 
-class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
-  int    _index = 0;
-  String _orgId = '';
+class _HomeShellState extends State<HomeShell>
+    with WidgetsBindingObserver, TickerProviderStateMixin {
+  int    _index   = 0;
+  String _orgId   = '';
   bool   _devMode = false;
   bool   _loading = true;
+
+  // AnimationController for the fade transition between tabs
+  late final AnimationController _fadeCtrl;
+  late final Animation<double>   _fadeAnim;
 
   @override
   void initState() {
     super.initState();
-    _index = widget.initialIndex;
+    _index     = widget.initialIndex;
     WidgetsBinding.instance.addObserver(this);
+
+    _fadeCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+    )..value = 1.0; // start fully visible
+    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeIn);
+
     _loadSession();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _fadeCtrl.dispose();
     super.dispose();
   }
 
-  /// Re-check dev_mode whenever the app comes back to foreground.
-  /// This handles the edge case where the session pref changes without
-  /// a full route replacement (e.g., background/foreground cycle).
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
@@ -61,9 +71,19 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     }
   }
 
+  Future<void> _switchTab(int newIndex) async {
+    if (newIndex == _index) return;
+    // Fade out, swap, fade in
+    await _fadeCtrl.reverse();
+    if (mounted) {
+      setState(() => _index = newIndex);
+    }
+    _fadeCtrl.forward();
+  }
+
   bool get _isDeveloper => _devMode;
 
-  // ---------- Org Admin tabs ----------
+  // ── Org Admin tabs ────────────────────────────────────────────────────────
   List<Widget> get _orgAdminTabs => [
     DashboardPage(orgId: _orgId),
     PaymentTypesListPage(orgId: _orgId, embedded: true),
@@ -72,35 +92,15 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     const ProfilePage(),
   ];
 
-  List<NavigationDestination> get _orgAdminDests => const [
-    NavigationDestination(
-      icon:         Icon(Icons.dashboard_outlined),
-      selectedIcon: Icon(Icons.dashboard_rounded),
-      label: 'Dashboard',
-    ),
-    NavigationDestination(
-      icon:         Icon(Icons.payment_outlined),
-      selectedIcon: Icon(Icons.payment_rounded),
-      label: 'Payments',
-    ),
-    NavigationDestination(
-      icon:         Icon(Icons.receipt_long_outlined),
-      selectedIcon: Icon(Icons.receipt_long_rounded),
-      label: 'Reports',
-    ),
-    NavigationDestination(
-      icon:         Icon(Icons.account_balance_outlined),
-      selectedIcon: Icon(Icons.account_balance_rounded),
-      label: 'Payouts',
-    ),
-    NavigationDestination(
-      icon:         Icon(Icons.settings_outlined),
-      selectedIcon: Icon(Icons.settings_rounded),
-      label: 'Settings',
-    ),
+  static const _orgAdminNavItems = <_NavItem>[
+    _NavItem(icon: Icons.dashboard_outlined,      label: 'Dashboard'),
+    _NavItem(icon: Icons.payment_outlined,         label: 'Payments'),
+    _NavItem(icon: Icons.receipt_long_outlined,    label: 'Reports'),
+    _NavItem(icon: Icons.account_balance_outlined, label: 'Payouts'),
+    _NavItem(icon: Icons.settings_outlined,        label: 'Settings'),
   ];
 
-  // ---------- Developer tabs ----------
+  // ── Developer tabs ────────────────────────────────────────────────────────
   List<Widget> get _developerTabs => [
     const DeveloperDashboardPage(),
     const DeveloperTransactionsPage(),
@@ -108,27 +108,11 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     const ProfilePage(),
   ];
 
-  List<NavigationDestination> get _developerDests => const [
-    NavigationDestination(
-      icon:         Icon(Icons.analytics_outlined),
-      selectedIcon: Icon(Icons.analytics_rounded),
-      label: 'Dashboard',
-    ),
-    NavigationDestination(
-      icon:         Icon(Icons.receipt_long_outlined),
-      selectedIcon: Icon(Icons.receipt_long_rounded),
-      label: 'Transactions',
-    ),
-    NavigationDestination(
-      icon:         Icon(Icons.webhook_outlined),
-      selectedIcon: Icon(Icons.webhook_rounded),
-      label: 'Webhooks',
-    ),
-    NavigationDestination(
-      icon:         Icon(Icons.settings_outlined),
-      selectedIcon: Icon(Icons.settings_rounded),
-      label: 'Settings',
-    ),
+  static const _developerNavItems = <_NavItem>[
+    _NavItem(icon: Icons.analytics_outlined,    label: 'Dashboard'),
+    _NavItem(icon: Icons.receipt_long_outlined, label: 'Transactions'),
+    _NavItem(icon: Icons.webhook_outlined,      label: 'Webhooks'),
+    _NavItem(icon: Icons.settings_outlined,     label: 'Settings'),
   ];
 
   @override
@@ -141,33 +125,136 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       );
     }
 
-    final tabs  = _isDeveloper ? _developerTabs  : _orgAdminTabs;
-    final dests = _isDeveloper ? _developerDests : _orgAdminDests;
+    final tabs      = _isDeveloper ? _developerTabs     : _orgAdminTabs;
+    final navItems  = _isDeveloper ? _developerNavItems : _orgAdminNavItems;
     final safeIndex = _index.clamp(0, tabs.length - 1);
-    final c = context.appColors;
+    final c         = context.appColors;
 
     return Scaffold(
       backgroundColor: c.background,
       body: SafeArea(
         bottom: false,
-        child: IndexedStack(
-          index: safeIndex,
-          children: tabs,
+        child: FadeTransition(
+          opacity: _fadeAnim,
+          child: IndexedStack(
+            index: safeIndex,
+            children: tabs,
+          ),
         ),
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: c.borderSubtle, width: 1)),
-        ),
-        child: NavigationBar(
-          selectedIndex: safeIndex,
-          onDestinationSelected: (i) {
-            // Clamp guard for role changes during session
-            if (i < tabs.length) setState(() => _index = i);
-          },
-          destinations: dests,
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        ),
+      bottomNavigationBar: _CustomBottomNav(
+        items:       navItems,
+        activeIndex: safeIndex,
+        onTap:       _switchTab,
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// _NavItem — data class for a single bottom nav entry
+// ---------------------------------------------------------------------------
+class _NavItem {
+  const _NavItem({required this.icon, required this.label});
+  final IconData icon;
+  final String   label;
+}
+
+// ---------------------------------------------------------------------------
+// _CustomBottomNav — Refined Financial Brutalism bottom navigation bar
+//
+// - Height: 64px + bottom safe area padding
+// - Background: bgSurface, top border: 1px borderStrong
+// - Active: amber 3px top indicator line + amber icon + amber label (labelSmall Sora)
+// - Inactive: textTertiary icon + label
+// - No animated NavigationIndicator pill
+// ---------------------------------------------------------------------------
+class _CustomBottomNav extends StatelessWidget {
+  const _CustomBottomNav({
+    required this.items,
+    required this.activeIndex,
+    required this.onTap,
+  });
+
+  final List<_NavItem> items;
+  final int            activeIndex;
+  final ValueChanged<int> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c    = context.appColors;
+    final text = Theme.of(context).textTheme;
+    final bottom = MediaQuery.of(context).padding.bottom;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: c.bgSurface,
+        border: Border(top: BorderSide(color: c.borderStrong, width: 1)),
+      ),
+      padding: EdgeInsets.only(bottom: bottom),
+      height: 64 + bottom,
+      child: Row(
+        children: items.asMap().entries.map((entry) {
+          final i      = entry.key;
+          final item   = entry.value;
+          final active = i == activeIndex;
+
+          return Expanded(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => onTap(i),
+              child: SizedBox(
+                height: 64,
+                child: Stack(
+                  alignment: Alignment.topCenter,
+                  children: [
+                    // 3px top indicator line when active
+                    if (active)
+                      Positioned(
+                        top: 0,
+                        left: 12,
+                        right: 12,
+                        child: Container(
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: c.primaryAmber,
+                            borderRadius: const BorderRadius.vertical(
+                              bottom: Radius.circular(3),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                    // Icon + label column
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            item.icon,
+                            size: 22,
+                            color: active ? c.primaryAmber : c.textTertiary,
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            item.label,
+                            style: text.labelSmall?.copyWith(
+                              color: active ? c.primaryAmber : c.textTertiary,
+                              fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                              fontSize: 10,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }

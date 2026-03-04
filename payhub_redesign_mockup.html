@@ -1,0 +1,2077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PayHub — Redesign Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   DESIGN TOKENS — REFINED FINANCIAL BRUTALISM
+   ============================================================ */
+:root {
+  --font-display: 'Instrument Serif', Georgia, serif;
+  --font-body:    'Sora', sans-serif;
+  --font-mono:    'DM Mono', 'Fira Mono', monospace;
+
+  /* Spacing */
+  --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
+  --s5: 20px; --s6: 24px; --s8: 32px; --s10: 40px;
+  --s12: 48px; --s16: 64px;
+
+  /* Radius */
+  --r-sm: 6px; --r-md: 10px; --r-lg: 14px; --r-xl: 18px; --r-full: 999px;
+
+  /* Duration */
+  --dur-fast: 120ms; --dur-mid: 240ms; --dur-slow: 400ms;
+}
+
+/* DARK THEME */
+[data-theme="dark"] {
+  --bg-base:        #080B0F;
+  --bg-surface:     #0F1318;
+  --bg-raised:      #161B22;
+  --bg-high:        #1E242D;
+  --bg-overlay:     #262D38;
+
+  --border-subtle:  rgba(255,255,255,0.06);
+  --border-mid:     rgba(255,255,255,0.10);
+  --border-strong:  rgba(255,255,255,0.18);
+
+  --text-primary:   #F0F2F5;
+  --text-secondary: #8B919E;
+  --text-tertiary:  #555D6B;
+  --text-disabled:  #353B46;
+
+  --accent-amber:   #E8831C;
+  --accent-amber-h: #F59532;
+  --accent-amber-bg: rgba(232,131,28,0.10);
+  --accent-amber-border: rgba(232,131,28,0.25);
+
+  --success:        #28A96A;
+  --success-bg:     rgba(40,169,106,0.10);
+  --success-border: rgba(40,169,106,0.25);
+
+  --error:          #E03C3C;
+  --error-bg:       rgba(224,60,60,0.10);
+  --error-border:   rgba(224,60,60,0.25);
+
+  --warning:        #D4922A;
+  --warning-bg:     rgba(212,146,42,0.10);
+  --warning-border: rgba(212,146,42,0.25);
+
+  --info:           #3A7FBB;
+  --info-bg:        rgba(58,127,187,0.10);
+
+  --chart-1: #E8831C;
+  --chart-2: #3A7FBB;
+  --chart-3: #28A96A;
+  --chart-4: #D4922A;
+
+  --noise-opacity: 0.025;
+  --grain: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+}
+
+/* LIGHT THEME */
+[data-theme="light"] {
+  --bg-base:        #F3F4F7;
+  --bg-surface:     #FFFFFF;
+  --bg-raised:      #F8F9FB;
+  --bg-high:        #EDEEF2;
+  --bg-overlay:     #E5E7EC;
+
+  --border-subtle:  rgba(0,0,0,0.05);
+  --border-mid:     rgba(0,0,0,0.08);
+  --border-strong:  rgba(0,0,0,0.14);
+
+  --text-primary:   #0D1117;
+  --text-secondary: #5A6170;
+  --text-tertiary:  #8E96A3;
+  --text-disabled:  #BDC2CC;
+
+  --accent-amber:   #C96A00;
+  --accent-amber-h: #E07800;
+  --accent-amber-bg: rgba(201,106,0,0.08);
+  --accent-amber-border: rgba(201,106,0,0.20);
+
+  --success:        #1A8A52;
+  --success-bg:     rgba(26,138,82,0.08);
+  --success-border: rgba(26,138,82,0.20);
+
+  --error:          #C42B2B;
+  --error-bg:       rgba(196,43,43,0.08);
+  --error-border:   rgba(196,43,43,0.20);
+
+  --warning:        #B07020;
+  --warning-bg:     rgba(176,112,32,0.08);
+  --warning-border: rgba(176,112,32,0.20);
+
+  --info:           #2166A0;
+  --info-bg:        rgba(33,102,160,0.08);
+
+  --chart-1: #C96A00;
+  --chart-2: #2166A0;
+  --chart-3: #1A8A52;
+  --chart-4: #B07020;
+
+  --noise-opacity: 0.018;
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  transition: background var(--dur-slow), color var(--dur-slow);
+  min-height: 100vh;
+}
+
+/* Grain texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: var(--grain);
+  opacity: var(--noise-opacity);
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ============================================================
+   LAYOUT SHELL
+   ============================================================ */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  max-width: 440px;
+  margin: 0 auto;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Top chrome bar */
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px var(--s4) 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.02em;
+}
+
+.status-time { font-weight: 500; color: var(--text-primary); }
+
+/* ============================================================
+   NAVIGATION BAR
+   ============================================================ */
+.nav-bar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 440px;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  padding: var(--s2) var(--s4) 20px;
+  gap: var(--s1);
+  z-index: 100;
+}
+
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--s2) var(--s1);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: all var(--dur-fast);
+  text-decoration: none;
+}
+
+.nav-item:hover { background: var(--bg-raised); }
+
+.nav-icon {
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+
+.nav-item svg { width: 20px; height: 20px; fill: none; stroke: var(--text-tertiary); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: stroke var(--dur-fast); }
+.nav-item.active svg { stroke: var(--accent-amber); }
+
+.nav-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  letter-spacing: 0.02em;
+  transition: color var(--dur-fast);
+}
+
+.nav-item.active .nav-label { color: var(--accent-amber); }
+
+/* Active indicator pill */
+.nav-item.active .nav-icon::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px; height: 2px;
+  background: var(--accent-amber);
+  border-radius: 2px;
+}
+
+/* ============================================================
+   SCREENS CONTAINER
+   ============================================================ */
+.screens-wrapper {
+  display: flex;
+  gap: var(--s16);
+  padding: var(--s4);
+  padding-bottom: 100px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.screens-wrapper::-webkit-scrollbar { display: none; }
+
+.screen {
+  min-width: 380px;
+  max-width: 380px;
+  scroll-snap-align: start;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   SCREEN LABEL (for mockup)
+   ============================================================ */
+.screen-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: var(--s3);
+  padding-left: var(--s1);
+}
+
+/* ============================================================
+   PAGE HEADER
+   ============================================================ */
+.page-header {
+  padding: var(--s2) 0 var(--s6);
+}
+
+.page-header .eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: var(--s2);
+}
+
+.page-header h1 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 400;
+  color: var(--text-primary);
+  font-style: italic;
+  line-height: 1.1;
+}
+
+.page-header .subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: var(--s2);
+}
+
+/* ============================================================
+   HERO STAT
+   ============================================================ */
+.hero-stat-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r-xl);
+  padding: var(--s6);
+  margin-bottom: var(--s3);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle at 80% 20%, var(--accent-amber-bg) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.hero-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: var(--s3);
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.hero-label::before {
+  content: '';
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent-amber);
+}
+
+.hero-amount {
+  font-family: var(--font-display);
+  font-size: 52px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  margin-bottom: var(--s2);
+}
+
+.hero-amount span.currency {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  color: var(--text-tertiary);
+  vertical-align: top;
+  margin-top: 8px;
+  display: inline-block;
+  margin-right: 4px;
+}
+
+.hero-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--success);
+  background: var(--success-bg);
+  border: 1px solid var(--success-border);
+  border-radius: var(--r-full);
+  padding: 2px var(--s3);
+}
+
+.hero-meta {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: var(--s3);
+  font-family: var(--font-mono);
+}
+
+/* ============================================================
+   MINI STAT ROW
+   ============================================================ */
+.stat-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s3);
+  margin-bottom: var(--s3);
+}
+
+.stat-cell {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-lg);
+  padding: var(--s4);
+}
+
+.stat-cell-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: var(--s2);
+}
+
+.stat-cell-value {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 400;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.stat-cell-value.success { color: var(--success); }
+.stat-cell-value.warning { color: var(--warning); }
+
+/* ============================================================
+   SECTION HEADER
+   ============================================================ */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--s3);
+  margin-top: var(--s5);
+}
+
+.section-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.section-action {
+  font-size: 12px;
+  color: var(--accent-amber);
+  cursor: pointer;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+/* ============================================================
+   CHART BARS (REFINED)
+   ============================================================ */
+.chart-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-lg);
+  padding: var(--s4);
+  margin-bottom: var(--s3);
+}
+
+.chart-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--s2);
+  height: 80px;
+  margin-bottom: var(--s3);
+}
+
+.chart-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s1);
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.chart-bar {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  position: relative;
+  transition: height var(--dur-slow) cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.chart-bar.filled { background: var(--accent-amber); opacity: 0.9; }
+.chart-bar.dim { background: var(--bg-high); }
+.chart-bar.today { background: var(--accent-amber); box-shadow: 0 0 16px var(--accent-amber-border); }
+
+.chart-day {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.05em;
+}
+
+.chart-day.today-label { color: var(--accent-amber); }
+
+.chart-axis {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: var(--s2);
+}
+
+.chart-axis-val {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-tertiary);
+}
+
+/* ============================================================
+   TRANSACTION LIST
+   ============================================================ */
+.txn-list { display: flex; flex-direction: column; gap: var(--s2); }
+
+.txn-item {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-lg);
+  padding: var(--s4);
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  cursor: pointer;
+  transition: all var(--dur-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.txn-item:hover { border-color: var(--border-mid); background: var(--bg-raised); }
+
+/* left accent line */
+.txn-item::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 20%; bottom: 20%;
+  width: 2px;
+  border-radius: 2px;
+}
+
+.txn-item.completed::before { background: var(--success); }
+.txn-item.processing::before { background: var(--warning); }
+.txn-item.failed::before { background: var(--error); }
+
+.txn-icon {
+  width: 36px; height: 36px;
+  border-radius: var(--r-md);
+  background: var(--bg-high);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.txn-info { flex: 1; min-width: 0; }
+
+.txn-type {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.txn-ref {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.txn-right { text-align: right; flex-shrink: 0; }
+
+.txn-amount {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.txn-time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  margin-top: 3px;
+}
+
+/* ============================================================
+   STATUS BADGE (REFINED)
+   ============================================================ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 500;
+  border-radius: var(--r-full);
+  padding: 3px var(--s3);
+  border: 1px solid;
+}
+
+.badge-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.badge.completed { color: var(--success); border-color: var(--success-border); background: var(--success-bg); }
+.badge.completed .badge-dot { background: var(--success); }
+.badge.processing { color: var(--warning); border-color: var(--warning-border); background: var(--warning-bg); }
+.badge.processing .badge-dot { background: var(--warning); animation: pulse 1.4s ease-in-out infinite; }
+.badge.failed { color: var(--error); border-color: var(--error-border); background: var(--error-bg); }
+.badge.failed .badge-dot { background: var(--error); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ============================================================
+   PAYMENT TYPE CARD (REDESIGNED)
+   ============================================================ */
+.pt-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-xl);
+  padding: var(--s5);
+  margin-bottom: var(--s3);
+  cursor: pointer;
+  transition: all var(--dur-fast);
+}
+
+.pt-card:hover { border-color: var(--border-mid); }
+
+.pt-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--s4);
+}
+
+.pt-name {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text-primary);
+}
+
+.pt-id {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  margin-top: 3px;
+}
+
+.pt-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: var(--s4);
+  line-height: 1.5;
+}
+
+.pt-limits {
+  display: flex;
+  gap: var(--s3);
+}
+
+.pt-limit-item {
+  flex: 1;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-md);
+  padding: var(--s3);
+}
+
+.pt-limit-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 4px;
+}
+
+.pt-limit-value {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.pt-actions {
+  display: flex;
+  gap: var(--s2);
+  margin-top: var(--s4);
+  padding-top: var(--s4);
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: var(--r-md);
+  padding: 10px var(--s4);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all var(--dur-fast);
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: var(--accent-amber);
+  color: #fff;
+  border-color: var(--accent-amber);
+}
+
+.btn-primary:hover { background: var(--accent-amber-h); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: var(--border-mid);
+}
+
+.btn-ghost:hover { background: var(--bg-raised); color: var(--text-primary); }
+
+.btn-danger {
+  background: transparent;
+  color: var(--error);
+  border-color: var(--error-border);
+}
+
+.btn-sm { font-size: 12px; padding: 7px var(--s3); }
+.btn-full { width: 100%; }
+.btn-icon { width: 36px; height: 36px; padding: 0; }
+
+/* ============================================================
+   DEVELOPER DASHBOARD
+   ============================================================ */
+.dev-metric-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s3);
+  margin-bottom: var(--s3);
+}
+
+.dev-metric {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-lg);
+  padding: var(--s4);
+}
+
+.dev-metric-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: var(--s2);
+}
+
+.dev-metric-value {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 400;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.dev-metric-sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+}
+
+.dev-metric.success-metric .dev-metric-value { color: var(--success); }
+.dev-metric.warning-metric .dev-metric-value { color: var(--warning); }
+
+/* Channel bar */
+.channel-bars { display: flex; flex-direction: column; gap: var(--s3); }
+
+.channel-row { display: flex; align-items: center; gap: var(--s3); }
+
+.channel-name {
+  font-size: 12px;
+  color: var(--text-secondary);
+  width: 88px;
+  flex-shrink: 0;
+}
+
+.channel-track {
+  flex: 1;
+  height: 6px;
+  background: var(--bg-high);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.channel-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width var(--dur-slow) cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.channel-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  width: 28px;
+  text-align: right;
+}
+
+/* Webhook health */
+.webhook-list { display: flex; flex-direction: column; gap: var(--s2); }
+
+.webhook-item {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-lg);
+  padding: var(--s3) var(--s4);
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  cursor: pointer;
+  transition: all var(--dur-fast);
+}
+
+.webhook-item:hover { border-color: var(--border-mid); }
+
+.webhook-status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.webhook-event {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.webhook-ref {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+
+/* ============================================================
+   LOGIN PAGE
+   ============================================================ */
+.login-bg {
+  background: var(--bg-base);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s8);
+  position: relative;
+  overflow: hidden;
+}
+
+.login-bg::after {
+  content: '';
+  position: absolute;
+  bottom: -30%;
+  right: -20%;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, var(--accent-amber-bg) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.login-logo {
+  width: 56px; height: 56px;
+  background: var(--accent-amber);
+  border-radius: var(--r-xl);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: var(--s6);
+  font-size: 24px;
+  box-shadow: 0 0 40px var(--accent-amber-border);
+}
+
+.login-heading {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin-bottom: var(--s2);
+  text-align: center;
+}
+
+.login-sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: var(--s8);
+}
+
+.login-form {
+  width: 100%;
+  max-width: 340px;
+}
+
+.form-group { margin-bottom: var(--s4); }
+
+.form-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  display: block;
+  margin-bottom: var(--s2);
+}
+
+.form-input {
+  width: 100%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r-md);
+  padding: 13px var(--s4);
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text-primary);
+  outline: none;
+  transition: all var(--dur-fast);
+}
+
+.form-input:focus { border-color: var(--accent-amber); box-shadow: 0 0 0 3px var(--accent-amber-bg); }
+
+/* ============================================================
+   TOGGLE — THEME SWITCHER
+   ============================================================ */
+.theme-switcher {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r-full);
+  padding: var(--s2) var(--s3);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  transition: all var(--dur-fast);
+  user-select: none;
+}
+
+.theme-switcher:hover { border-color: var(--border-strong); color: var(--text-primary); }
+
+.theme-switcher-track {
+  width: 28px; height: 16px;
+  background: var(--bg-high);
+  border-radius: var(--r-full);
+  position: relative;
+  transition: background var(--dur-mid);
+}
+
+[data-theme="dark"] .theme-switcher-track { background: var(--accent-amber); }
+
+.theme-switcher-thumb {
+  width: 12px; height: 12px;
+  background: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px; left: 2px;
+  transition: transform var(--dur-mid) cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+[data-theme="dark"] .theme-switcher-thumb { transform: translateX(12px); }
+
+/* ============================================================
+   SECTION DIVIDER
+   ============================================================ */
+.divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: var(--s5) 0;
+}
+
+/* ============================================================
+   SUBSCRIPTION CARD
+   ============================================================ */
+.sub-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r-xl);
+  padding: var(--s5);
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  margin-bottom: var(--s3);
+}
+
+.sub-icon {
+  width: 48px; height: 48px;
+  border-radius: var(--r-lg);
+  background: var(--accent-amber-bg);
+  border: 1px solid var(--accent-amber-border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.sub-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.sub-detail {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: 3px;
+}
+
+/* ============================================================
+   PAGE TITLE STRIP  (new pattern replacing gradient pill)
+   ============================================================ */
+.page-strip {
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: var(--s4);
+  margin-bottom: var(--s5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.page-strip-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--text-primary);
+}
+
+.page-strip-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-amber);
+  margin-bottom: 2px;
+}
+
+.strip-actions { display: flex; gap: var(--s2); }
+
+/* ============================================================
+   FILTER CHIPS
+   ============================================================ */
+.filter-row {
+  display: flex;
+  gap: var(--s2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-bottom: var(--s4);
+  padding-bottom: 2px;
+}
+
+.filter-chip {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 500;
+  padding: 5px var(--s3);
+  border-radius: var(--r-full);
+  border: 1px solid var(--border-mid);
+  color: var(--text-secondary);
+  background: transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--dur-fast);
+}
+
+.filter-chip.active {
+  background: var(--accent-amber);
+  border-color: var(--accent-amber);
+  color: #fff;
+}
+
+.filter-chip:hover:not(.active) { border-color: var(--border-strong); color: var(--text-primary); }
+
+/* ============================================================
+   INFO ROWS (settings/profile)
+   ============================================================ */
+.info-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  margin-bottom: var(--s3);
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s4) var(--s5);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.info-row:last-child { border-bottom: none; }
+
+.info-icon {
+  width: 32px; height: 32px;
+  border-radius: var(--r-md);
+  background: var(--bg-high);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: 13px;
+}
+
+.info-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.info-value {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-top: 1px;
+}
+
+.info-row-right { margin-left: auto; }
+
+/* Toggle switch */
+.toggle-switch {
+  width: 36px; height: 20px;
+  background: var(--bg-high);
+  border-radius: var(--r-full);
+  position: relative;
+  cursor: pointer;
+  transition: background var(--dur-mid);
+}
+
+.toggle-switch.on { background: var(--accent-amber); }
+
+.toggle-thumb {
+  width: 16px; height: 16px;
+  background: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px; left: 2px;
+  transition: transform var(--dur-mid) cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+
+.toggle-switch.on .toggle-thumb { transform: translateX(16px); }
+
+/* ============================================================
+   MOCKUP WRAPPER
+   ============================================================ */
+.mockup-page {
+  min-height: 100vh;
+  padding: 60px 24px 80px;
+}
+
+.mockup-header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.mockup-header h2 {
+  font-family: var(--font-display);
+  font-size: 42px;
+  font-style: italic;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.mockup-header p {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.screens-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 380px));
+  gap: 32px;
+  justify-content: center;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.phone-frame {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-mid);
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.15), 0 4px 16px rgba(0,0,0,0.08);
+}
+
+.phone-notch {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px 6px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.phone-time {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.phone-icons {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.phone-icons span {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.phone-content {
+  padding: 16px 16px 0;
+  max-height: 640px;
+  overflow: hidden;
+}
+
+.phone-nav {
+  display: flex;
+  padding: 8px 16px 20px;
+  border-top: 1px solid var(--border-subtle);
+  gap: 4px;
+}
+
+.phone-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 4px;
+  border-radius: 8px;
+}
+
+.phone-nav-item.active { }
+
+.pni-dot {
+  width: 18px; height: 2px;
+  border-radius: 2px;
+  background: transparent;
+  margin-bottom: 2px;
+}
+
+.phone-nav-item.active .pni-dot { background: var(--accent-amber); }
+
+.pni-icon {
+  width: 20px; height: 20px;
+  background: var(--bg-high);
+  border-radius: 4px;
+  opacity: 0.5;
+}
+
+.phone-nav-item.active .pni-icon { background: var(--accent-amber-bg); border: 1px solid var(--accent-amber-border); opacity: 1; }
+
+.pni-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.05em;
+}
+
+.phone-nav-item.active .pni-label { color: var(--accent-amber); }
+
+/* Screen labels */
+.screen-tag {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-top: 12px;
+  padding-bottom: 4px;
+}
+
+/* ============================================================
+   METHODOLOGY CARD
+   ============================================================ */
+.methodology-block {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r-xl);
+  padding: 40px;
+  max-width: 860px;
+  margin: 0 auto 56px;
+}
+
+.meth-heading {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-style: italic;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.meth-sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-amber);
+  margin-bottom: 24px;
+}
+
+.meth-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.meth-pill {
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-lg);
+  padding: 14px 16px;
+}
+
+.meth-pill-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--accent-amber);
+  margin-bottom: 6px;
+}
+
+.meth-pill-body {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.color-swatches {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.swatch-dot {
+  width: 32px; height: 32px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.swatch-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.05em;
+}
+
+</style>
+</head>
+
+<body data-theme="dark">
+
+<!-- THEME TOGGLE -->
+<button class="theme-switcher" onclick="toggleTheme()" aria-label="Toggle theme">
+  <div class="theme-switcher-track"><div class="theme-switcher-thumb"></div></div>
+  <span id="theme-label">DARK</span>
+</button>
+
+<!-- MAIN MOCKUP PAGE -->
+<div class="mockup-page">
+
+  <!-- HEADER -->
+  <div class="mockup-header">
+    <p>PayHub · Redesign Proposal</p>
+    <h2>Refined Financial Brutalism</h2>
+    <p style="margin-top:8px">Auto light / dark · Sora + Instrument Serif + DM Mono</p>
+  </div>
+
+  <!-- METHODOLOGY BLOCK -->
+  <div class="methodology-block">
+    <div class="meth-sub">Design Methodology</div>
+    <div class="meth-heading">Refined Financial Brutalism</div>
+    <p style="font-size:13px;color:var(--text-secondary);line-height:1.7;max-width:600px">
+      Not the harsh early-2000s brutalism — a refined take rooted in Bloomberg terminals, Figma's 2024 component language, and the crisp utility of trading interfaces. Monochromatic structure with precisely-rationed colour; editorial typography with one serif display face; every UI element earns its place through function.
+    </p>
+
+    <div class="meth-grid">
+      <div class="meth-pill">
+        <div class="meth-pill-title">Typography</div>
+        <div class="meth-pill-body"><strong>Instrument Serif</strong> (italic) for all display numbers & headings — financial authority without stuffiness. <strong>Sora</strong> for UI labels. <strong>DM Mono</strong> for codes, refs, timestamps, figures.</div>
+      </div>
+      <div class="meth-pill">
+        <div class="meth-pill-title">Colour Economy</div>
+        <div class="meth-pill-body">Neutral surfaces hold everything. Amber = primary action only. Green = success/healthy. Red = error/alert. Yellow-amber = warning. No decorative colour anywhere else.</div>
+      </div>
+      <div class="meth-pill">
+        <div class="meth-pill-title">Spatial Hierarchy</div>
+        <div class="meth-pill-body">One hero number per screen. Generous vertical rhythm. Tight mono metadata below every primary value. Tables and lists are dense; action areas breathe.</div>
+      </div>
+      <div class="meth-pill">
+        <div class="meth-pill-title">Texture & Depth</div>
+        <div class="meth-pill-body">Subtle film-grain noise overlay on the base layer. Four surface levels for card hierarchy (base / surface / raised / high). No blur or glass effects.</div>
+      </div>
+      <div class="meth-pill">
+        <div class="meth-pill-title">Dark Theme</div>
+        <div class="meth-pill-body">#080B0F base → near-black cool dark surfaces. Amber glows softly. Text at 3 levels: #F0F2F5 / #8B919E / #555D6B.</div>
+      </div>
+      <div class="meth-pill">
+        <div class="meth-pill-title">Light Theme</div>
+        <div class="meth-pill-body">#F3F4F7 warm-grey base → white surfaces. Amber deepens to #C96A00 for contrast. Subtle borders separate layers without colour.</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.10em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:10px">Accent Palette</div>
+    <div class="color-swatches">
+      <div class="swatch"><div class="swatch-dot" style="background:#E8831C"></div><div class="swatch-label">AMBER</div></div>
+      <div class="swatch"><div class="swatch-dot" style="background:#28A96A"></div><div class="swatch-label">SUCCESS</div></div>
+      <div class="swatch"><div class="swatch-dot" style="background:#E03C3C"></div><div class="swatch-label">ERROR</div></div>
+      <div class="swatch"><div class="swatch-dot" style="background:#D4922A"></div><div class="swatch-label">WARNING</div></div>
+      <div class="swatch"><div class="swatch-dot" style="background:#3A7FBB"></div><div class="swatch-label">INFO</div></div>
+    </div>
+  </div>
+
+  <!-- SCREENS GRID -->
+  <div class="screens-grid">
+
+    <!-- ====================================================
+         SCREEN 1 — ORG ADMIN DASHBOARD
+         ==================================================== -->
+    <div>
+      <div class="phone-frame">
+        <div class="phone-notch">
+          <span class="phone-time">09:41</span>
+          <div class="phone-icons"><span>●●●●</span><span>WiFi</span><span>🔋</span></div>
+        </div>
+        <div class="phone-content">
+
+          <div class="page-strip">
+            <div>
+              <div class="page-strip-eyebrow">XYZ School</div>
+              <div class="page-strip-title">Dashboard</div>
+            </div>
+            <div class="strip-actions">
+              <button class="btn btn-ghost btn-icon btn-sm">↺</button>
+              <button class="btn btn-ghost btn-icon btn-sm">◯</button>
+            </div>
+          </div>
+
+          <!-- Hero stat -->
+          <div class="hero-stat-card">
+            <div class="hero-label">Total Volume · 7 days</div>
+            <div class="hero-amount"><span class="currency">GHS</span>71,750</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+              <span class="badge completed"><span class="badge-dot"></span>+12.4%</span>
+              <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-tertiary)">vs last week</span>
+            </div>
+            <div class="hero-meta">287 completed · 3 failed · last updated now</div>
+          </div>
+
+          <!-- Mini stats -->
+          <div class="stat-row">
+            <div class="stat-cell">
+              <div class="stat-cell-label">Transactions</div>
+              <div class="stat-cell-value">287</div>
+            </div>
+            <div class="stat-cell">
+              <div class="stat-cell-label">Commission</div>
+              <div class="stat-cell-value" style="font-size:20px">GHS 1,435</div>
+            </div>
+          </div>
+
+          <!-- Mini bar chart -->
+          <div class="section-header">
+            <span class="section-title">Daily Activity</span>
+          </div>
+          <div class="chart-panel">
+            <div class="chart-bars">
+              <div class="chart-bar-col"><div class="chart-bar dim" style="height:30%"></div><div class="chart-day">Mo</div></div>
+              <div class="chart-bar-col"><div class="chart-bar filled" style="height:55%"></div><div class="chart-day">Tu</div></div>
+              <div class="chart-bar-col"><div class="chart-bar filled" style="height:72%"></div><div class="chart-day">We</div></div>
+              <div class="chart-bar-col"><div class="chart-bar filled" style="height:45%"></div><div class="chart-day">Th</div></div>
+              <div class="chart-bar-col"><div class="chart-bar filled" style="height:88%"></div><div class="chart-day">Fr</div></div>
+              <div class="chart-bar-col"><div class="chart-bar filled" style="height:60%"></div><div class="chart-day">Sa</div></div>
+              <div class="chart-bar-col"><div class="chart-bar today" style="height:100%"></div><div class="chart-day today-label">Su</div></div>
+            </div>
+          </div>
+
+          <!-- Recent transactions -->
+          <div class="section-header">
+            <span class="section-title">Recent</span>
+            <a class="section-action">View all →</a>
+          </div>
+          <div class="txn-list">
+            <div class="txn-item completed">
+              <div class="txn-icon">🏫</div>
+              <div class="txn-info">
+                <div class="txn-type">School Fees</div>
+                <div class="txn-ref">TXN-2024-00291 · MTN MoMo</div>
+              </div>
+              <div class="txn-right">
+                <div class="txn-amount">250</div>
+                <div class="txn-time">2h ago</div>
+              </div>
+            </div>
+            <div class="txn-item processing">
+              <div class="txn-icon">👥</div>
+              <div class="txn-info">
+                <div class="txn-type">PTA Dues</div>
+                <div class="txn-ref">TXN-2024-00290 · Vodafone</div>
+              </div>
+              <div class="txn-right">
+                <div class="txn-amount">75</div>
+                <div class="txn-time">3h ago</div>
+              </div>
+            </div>
+            <div class="txn-item failed">
+              <div class="txn-icon">📚</div>
+              <div class="txn-info">
+                <div class="txn-type">Excursion Fee</div>
+                <div class="txn-ref">TXN-2024-00289 · AirtelTigo</div>
+              </div>
+              <div class="txn-right">
+                <div class="txn-amount">120</div>
+                <div class="txn-time">5h ago</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="height:24px"></div>
+        </div>
+        <div class="phone-nav">
+          <div class="phone-nav-item active"><div class="pni-dot"></div><div class="pni-icon"></div><div class="pni-label">Dashboard</div></div>
+          <div class="phone-nav-item"><div class="pni-dot"></div><div class="pni-icon"></div><div class="pni-label">Payments</div></div>
+          <div class="phone-nav-item"><div class="pni-dot"></div><div class="pni-icon"></div><div class="pni-label">Reports</div></div>
+          <div class="phone-nav-item"><div class="pni-dot"></div><div class="pni-icon"></div><div class="pni-label">Settings</div></div>
+        </div>
+      </div>
+      <div class="screen-tag">Org Admin · Dashboard</div>
+    </div>
+
+    <!-- ====================================================
+         SCREEN 2 — PAYMENT TYPES
+         ==================================================== -->
+    <div>
+      <div class="phone-frame">
+        <div class="phone-notch">
+          <span class="phone-time">09:41</span>
+          <div class="phone-icons"><span>●●●●</span><span>WiFi</span><span>🔋</span></div>
+        </div>
+        <div class="phone-content">
+
+          <div class="page-strip">
+            <div>
+              <div class="page-strip-eyebrow">Configuration</div>
+              <div class="page-strip-title">Payment Types</div>
+            </div>
+            <div class="strip-actions">
+              <button class="btn btn-primary btn-sm">+ Add</button>
+            </div>
+          </div>
+
+          <div class="filter-row">
+            <div class="filter-chip active">All</div>
+            <div class="filter-chip">Active</div>
+            <div class="filter-chip">Disabled</div>
+          </div>
+
+          <!-- Payment type card 1 -->
+          <div class="pt-card">
+            <div class="pt-card-header">
+              <div>
+                <div class="pt-name">School Fees</div>
+                <div class="pt-id">ID: school_fees</div>
+              </div>
+              <span class="badge completed"><span class="badge-dot"></span>Active</span>
+            </div>
+            <div class="pt-desc">Primary term school fees — all year groups</div>
+            <div class="pt-limits">
+              <div class="pt-limit-item">
+                <div class="pt-limit-label">Min</div>
+                <div class="pt-limit-value">GHS 100</div>
+              </div>
+              <div class="pt-limit-item">
+                <div class="pt-limit-label">Max</div>
+                <div class="pt-limit-value">GHS 5,000</div>
+              </div>
+              <div class="pt-limit-item">
+                <div class="pt-limit-label">Txns</div>
+                <div class="pt-limit-value">187</div>
+              </div>
+            </div>
+            <div class="pt-actions">
+              <button class="btn btn-ghost btn-sm" style="flex:1">Edit</button>
+              <button class="btn btn-danger btn-sm" style="flex:1">Disable</button>
+            </div>
+          </div>
+
+          <!-- Payment type card 2 -->
+          <div class="pt-card">
+            <div class="pt-card-header">
+              <div>
+                <div class="pt-name">PTA Dues</div>
+                <div class="pt-id">ID: pta_dues</div>
+              </div>
+              <span class="badge completed"><span class="badge-dot"></span>Active</span>
+            </div>
+            <div class="pt-limits">
+              <div class="pt-limit-item">
+                <div class="pt-limit-label">Min</div>
+                <div class="pt-limit-value">GHS 20</div>
+              </div>
+              <div class="pt-limit-item">
+                <div class="pt-limit-label">Max</div>
+                <div class="pt-limit-value">GHS 80</div>
+              </div>
+              <div class="pt-limit-item">
+                <div class="pt-limit-label">Txns</div>
+                <div class="pt-limit-value">64</div>
+              </div>
+            </div>
+            <div class="pt-actions">
+              <button class="btn btn-ghost btn-sm" style="flex:1">Edit</button>
+              <button class="btn btn-danger btn-sm" style="flex:1">Disable</button>
+            </div>
+          </div>
+
+          <!-- Disabled payment type -->
+          <div class="pt-card" style="opacity:0.65">
+            <div class="pt-card-header">
+              <div>
+                <div class="pt-name">Excursion Fee</div>
+                <div class="pt-id">ID: excursion_fee</div>
+              </div>
+              <span class="badge failed"><span class="badge-dot"></span>Disabled</span>
+            </div>
+            <div class="pt-limits">
+              <div class="pt-limit-item"><div class="pt-limit-label">Min</div><div class="pt-limit-value">GHS 50</div></div>
+              <div class="pt-limit-item"><div class="pt-limit-label">Max</div><div class="pt-limit-value">GHS 200</div></div>
+              <div class="pt-limit-item"><div class="pt-limit-label">Txns</div><div class="pt-limit-value">—</div></div>
+            </div>
+            <div class="pt-actions">
+              <button class="btn btn-ghost btn-sm" style="flex:1">Edit</button>
+              <button class="btn btn-primary btn-sm" style="flex:1">Enable</button>
+            </div>
+          </div>
+
+          <div style="height:24px"></div>
+        </div>
+        <div class="phone-nav">
+          <div class="phone-nav-item"><div class="pni-dot"></div><div class="pni-icon"></div><div class="pni-label">Dashboard</div></div>
+          <div class="phone-nav-item active"><div class="pni-dot"></div><div class="pni-icon"></div><div class="pni-label">Payments</div></div>
+          <div class="phone-nav-item"><div class="pni-dot"></div><div class="pni-icon"></div><div class="pni-label">Reports</div></div>
+          <div class="phone-nav-item"><div class="pni-dot"></div><div class="pni-icon"></div><div class="pni-label">Settings</div></div>
+        </div>
+      </div>
+      <div class="screen-tag">Org Admin · Payment Types</div>
+    </div>
+
+    <!-- ====================================================
+         SCREEN 3 — TRANSACTIONS (REPORTS)
+         ==================================================== -->
+    <div>
+      <div class="phone-frame">
+        <div class="phone-notch">
+          <span class="phone-time">09:41</span>
+          <div class="phone-icons"><span>●●●●</span><span>WiFi</span><span>🔋</span></div>
+        </div>
+        <div class="phone-content">
+
+          <div class="page-strip">
+            <div>
+              <div class="page-strip-eyebrow">Reports</div>
+              <div class="page-strip-title">Transactions</div>
+            </div>
+            <div class="strip-actions">
+              <button class="btn btn-ghost btn-icon btn-sm">⬇</button>
+              <button class="btn btn-ghost btn-icon btn-sm">↺</button>
+            </div>
+          </div>
+
+          <div class="filter-row">
+            <div class="filter-chip active">All</div>
+            <div class="filter-chip">Completed</div>
+            <div class="filter-chip">Processing</div>
+            <div class="filter-chip">Failed</div>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-bottom:14px">
+            <button class="btn btn-ghost btn-sm" style="flex:1;font-family:var(--font-mono);font-size:10px">📅 Start date</button>
+            <button class="btn btn-ghost btn-sm" style="flex:1;font-family:var(--font-mono);font-size:10px">📅 End date</button>
+          </div>
+
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);margin-bottom:10px;letter-spacing:.06em">287 TRANSACTIONS FOUND</div>
+
+          <div class="txn-list">
+            <div class="txn-item completed">
+              <div class="txn-icon">🏫</div>
+              <div class="txn-info">
+                <div class="txn-type">School Fees</div>
+                <div class="txn-ref">TXN-2024-00291</div>
+              </div>
+              <div class="txn-right">
+                <div class="txn-amount">250</div>
+                <div><span class="badge completed" style="font-size:9px;padding:2px 6px">Completed</span></div>
+              </div>
+            </div>
+            <div class="txn-item processing">
+              <div class="txn-icon">👥</div>
+              <div class="txn-info">
+                <div class="txn-type">PTA Dues</div>
+                <div class="txn-ref">TXN-2024-00290</div>
+              </div>
+              <div class="txn-right">
+                <div class="txn-amount">75</div>
+                <div><span class="badge processing" style="font-size:9px;padding:2px 6px">Processing</span></div>
+              </div>
+            </div>
+            <div class="txn-item completed">
+              <div class="txn-icon">📚</div>
+              <div class="txn-info">
+                <div class="txn-type">School Fees</div>
+                <div class="txn-ref">TXN-2024-00289</div>
+              </div>
+              <div class="txn-right">
+                <div class="txn-amount">500</div>
+                <div><span class="badge completed" style="font-size:9px;padding:2px 6px">Completed</span></div>
+              </div>
+            </div>
+            <div class="txn-item failed">
+              <div class="txn-icon">💳</div>
+              <div class="txn-info">
+                <div class="txn-type">Excursion Fee</div>
+                <div class="txn-ref">TXN-2024-00288</div>
+              </div>
+              <div class="txn-right">
+                <div class="txn-amount">120</div>
+                <div><span class="badge failed" style="font-size:9px;padding:2px 6px">Failed</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pagination -->
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid var(--border-subtle);margin-top:12px">
+            <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary)">Page 1 / 20  ·  287</span>
+            <div style="display:flex;gap:4px">
+              <button class="btn btn-ghost btn-sm" style="opacity:0.4">‹</button>
+              <button class="btn btn-ghost btn-sm">›</button>
+            </div>
+          </div>
+
+          <div style="height:8px"></div>
+        </div>
+        <div class="phone-nav">
+          <div class="phone-nav-item"><div class="pni-dot"></div><div class="pni-icon"></div><div class="pni-label">Dashboard</div></div>
+          <div class="phone-nav-item"><div class="pni-dot"></div><div class="pni-icon"></div><div class="pni-label">Payments</div></div>
+          <div class="phone-nav-item active"><div class="pni-dot"></div><div class="pni-icon"></div><div class="pni-label">Reports</div></div>
+          <div class="phone-nav-item"><div class="pni-dot"></div><div class="pni-icon"></div><div class="pni-label">Settings</div></div>
+        </div>
+      </div>
+      <div class="screen-tag">Org Admin · Reports</div>
+    </div>
+
+    <!-- ====================================================
+         SCREEN 4 — DEVELOPER DASHBOARD
+         ==================================================== -->
+    <div>
+      <div class="phone-frame">
+        <div class="phone-notch">
+          <span class="phone-time">09:41</span>
+          <div class="phone-icons"><span>●●●●</span><span>WiFi</span><span>🔋</span></div>
+        </div>
+        <div class="phone-content">
+
+          <div class="page-strip">
+            <div>
+              <div class="page-strip-eyebrow">Developer Portal</div>
+              <div class="page-strip-title">Analytics</div>
+            </div>
+            <div class="strip-actions">
+              <div style="display:flex;gap:4px">
+                <button class="btn btn-ghost btn-sm" style="font-family:var(--font-mono);font-size:10px;opacity:.7">7d</button>
+                <button class="btn btn-primary btn-sm" style="font-family:var(--font-mono);font-size:10px">30d</button>
+                <button class="btn btn-ghost btn-sm" style="font-family:var(--font-mono);font-size:10px;opacity:.7">90d</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dev metrics 2x2 -->
+          <div class="dev-metric-grid">
+            <div class="dev-metric">
+              <div class="dev-metric-label">Transactions</div>
+              <div class="dev-metric-value">1,284</div>
+              <div class="dev-metric-sub">↑ 8.2% vs prior period</div>
+            </div>
+            <div class="dev-metric success-metric">
+              <div class="dev-metric-label">Success Rate</div>
+              <div class="dev-metric-value">96.3%</div>
+              <div class="dev-metric-sub">↑ 1.1pp</div>
+            </div>
+            <div class="dev-metric">
+              <div class="dev-metric-label">Net Volume</div>
+              <div class="dev-metric-value" style="font-size:22px">GHS 284K</div>
+              <div class="dev-metric-sub">↑ 14.7%</div>
+            </div>
+            <div class="dev-metric success-metric">
+              <div class="dev-metric-label">Webhook OK</div>
+              <div class="dev-metric-value">98.1%</div>
+              <div class="dev-metric-sub">↓ 0.3pp</div>
+            </div>
+          </div>
+
+          <!-- Channel breakdown -->
+          <div class="section-header"><span class="section-title">Payment Channels</span></div>
+          <div class="chart-panel">
+            <div class="channel-bars">
+              <div class="channel-row">
+                <div class="channel-name" style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)">Mobile Money</div>
+                <div class="channel-track"><div class="channel-fill" style="width:72%;background:var(--chart-1)"></div></div>
+                <div class="channel-count" style="font-family:var(--font-mono)">924</div>
+              </div>
+              <div class="channel-row">
+                <div class="channel-name" style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)">Card</div>
+                <div class="channel-track"><div class="channel-fill" style="width:20%;background:var(--chart-2)"></div></div>
+                <div class="channel-count" style="font-family:var(--font-mono)">257</div>
+              </div>
+              <div class="channel-row">
+                <div class="channel-name" style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)">USSD Bridge</div>
+                <div class="channel-track"><div class="channel-fill" style="width:8%;background:var(--chart-3)"></div></div>
+                <div class="channel-count" style="font-family:var(--font-mono)">103</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Webhook health -->
+          <div class="section-header"><span class="section-title">Webhook Health</span></div>
+          <div class="webhook-list">
+            <div class="webhook-item">
+              <div class="webhook-status-dot" style="background:var(--success)"></div>
+              <div style="flex:1">
+                <div class="webhook-event">payment.completed</div>
+                <div class="webhook-ref">TXN-2024-00291 · just now</div>
+              </div>
+              <span class="badge completed" style="font-size:9px;padding:2px 6px">Delivered</span>
+            </div>
+            <div class="webhook-item">
+              <div class="webhook-status-dot" style="background:var(--warning);animation:pulse 1.4s ease-in-out infinite"></div>
+              <div style="flex:1">
+                <div class="webhook-event">payment.failed</div>
+                <div class="webhook-ref">TXN-2024-00287 · 2h ago</div>
+              </div>
+              <span class="badge processing" style="font-size:9px;padding:2px 6px">Retrying</span>
+            </div>
+            <div class="webhook-item">
+              <div class="webhook-status-dot" style="background:var(--error)"></div>
+              <div style="flex:1">
+                <div class="webhook-event">payment.completed</div>
+                <div class="webhook-ref">TXN-2024-00282 · 8h ago</div>
+              </div>
+              <span class="badge failed" style="font-size:9px;padding:2px 6px">Failed</span>
+            </div>
+          </div>
+
+          <div style="height:24px"></div>
+        </div>
+        <div class="phone-nav">
+          <div class="phone-nav-item active"><div class="pni-dot"></div><div class="pni-icon"></div><div class="pni-label">Dashboard</div></div>
+          <div class="phone-nav-item"><div class="pni-dot"></div><div class="pni-icon"></div><div class="pni-label">Txns</div></div>
+          <div class="phone-nav-item"><div class="pni-dot"></div><div class="pni-icon"></div><div class="pni-label">Webhooks</div></div>
+          <div class="phone-nav-item"><div class="pni-dot"></div><div class="pni-icon"></div><div class="pni-label">Settings</div></div>
+        </div>
+      </div>
+      <div class="screen-tag">Developer · Dashboard</div>
+    </div>
+
+    <!-- ====================================================
+         SCREEN 5 — SETTINGS / PROFILE
+         ==================================================== -->
+    <div>
+      <div class="phone-frame">
+        <div class="phone-notch">
+          <span class="phone-time">09:41</span>
+          <div class="phone-icons"><span>●●●●</span><span>WiFi</span><span>🔋</span></div>
+        </div>
+        <div class="phone-content">
+
+          <div class="page-strip">
+            <div>
+              <div class="page-strip-eyebrow">Account</div>
+              <div class="page-strip-title">Settings</div>
+            </div>
+          </div>
+
+          <!-- Avatar / identity block -->
+          <div style="display:flex;align-items:center;gap:14px;padding:16px 0 20px;border-bottom:1px solid var(--border-subtle);margin-bottom:20px">
+            <div style="width:52px;height:52px;border-radius:50%;background:var(--accent-amber-bg);border:1px solid var(--accent-amber-border);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:24px;color:var(--accent-amber)">K</div>
+            <div>
+              <div style="font-weight:700;font-size:15px;color:var(--text-primary)">Kofi Mensah</div>
+              <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);margin-top:2px;letter-spacing:.04em">ROLE: ORG_ADMIN</div>
+            </div>
+            <div style="margin-left:auto"><button class="btn btn-ghost btn-sm">Edit</button></div>
+          </div>
+
+          <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.10em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:10px">Account Details</div>
+          <div class="info-panel">
+            <div class="info-row">
+              <div class="info-icon">✉</div>
+              <div>
+                <div class="info-label">Email</div>
+                <div class="info-value">bursar@xyzschool.edu.gh</div>
+              </div>
+            </div>
+            <div class="info-row">
+              <div class="info-icon">🏢</div>
+              <div>
+                <div class="info-label">Organisation</div>
+                <div class="info-value">XYZ School</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Subscription quick view -->
+          <div style="margin-top:16px;font-family:var(--font-mono);font-size:10px;letter-spacing:.10em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:10px">Subscription</div>
+          <div class="sub-card">
+            <div class="sub-icon">★</div>
+            <div style="flex:1">
+              <div class="sub-title">Active · Monthly</div>
+              <div class="sub-detail">Expires 28 Apr 2026 · USSD enabled</div>
+            </div>
+            <button class="btn btn-ghost btn-sm">›</button>
+          </div>
+
+          <!-- Preferences -->
+          <div style="margin-top:16px;font-family:var(--font-mono);font-size:10px;letter-spacing:.10em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:10px">Preferences</div>
+          <div class="info-panel">
+            <div class="info-row">
+              <div class="info-icon">🌙</div>
+              <div><div class="info-label">Dark Mode</div><div class="info-value">Enabled</div></div>
+              <div class="info-row-right"><div class="toggle-switch on"><div class="toggle-thumb"></div></div></div>
+            </div>
+            <div class="info-row">
+              <div class="info-icon">💬</div>
+              <div><div class="info-label">SMS Receipts</div><div class="info-value">Customers receive SMS</div></div>
+              <div class="info-row-right"><div class="toggle-switch on"><div class="toggle-thumb"></div></div></div>
+            </div>
+            <div class="info-row">
+              <div class="info-icon">⚙</div>
+              <div><div class="info-label">Developer Mode</div><div class="info-value">Off</div></div>
+              <div class="info-row-right"><div class="toggle-switch"><div class="toggle-thumb"></div></div></div>
+            </div>
+          </div>
+
+          <div style="margin-top:20px">
+            <button class="btn btn-danger btn-full">Sign Out</button>
+          </div>
+
+          <div style="height:24px"></div>
+        </div>
+        <div class="phone-nav">
+          <div class="phone-nav-item"><div class="pni-dot"></div><div class="pni-icon"></div><div class="pni-label">Dashboard</div></div>
+          <div class="phone-nav-item"><div class="pni-dot"></div><div class="pni-icon"></div><div class="pni-label">Payments</div></div>
+          <div class="phone-nav-item"><div class="pni-dot"></div><div class="pni-icon"></div><div class="pni-label">Reports</div></div>
+          <div class="phone-nav-item active"><div class="pni-dot"></div><div class="pni-icon"></div><div class="pni-label">Settings</div></div>
+        </div>
+      </div>
+      <div class="screen-tag">Org Admin · Settings</div>
+    </div>
+
+    <!-- ====================================================
+         SCREEN 6 — LOGIN
+         ==================================================== -->
+    <div>
+      <div class="phone-frame" style="min-height:580px">
+        <div class="phone-notch">
+          <span class="phone-time">09:41</span>
+          <div class="phone-icons"><span>●●●●</span><span>WiFi</span><span>🔋</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;min-height:560px;background:var(--bg-base);position:relative;overflow:hidden">
+
+          <!-- Ambient glow -->
+          <div style="position:absolute;bottom:-60px;right:-60px;width:280px;height:280px;background:radial-gradient(circle,var(--accent-amber-bg) 0%,transparent 60%);pointer-events:none"></div>
+          <div style="position:absolute;top:-40px;left:-40px;width:200px;height:200px;background:radial-gradient(circle,rgba(58,127,187,0.06) 0%,transparent 60%);pointer-events:none"></div>
+
+          <div class="login-logo">⬡</div>
+
+          <div class="login-heading">Welcome back</div>
+          <div class="login-sub">Sign in to PayHub</div>
+
+          <div class="login-form" style="width:100%">
+            <div class="form-group">
+              <label class="form-label">Email address</label>
+              <div class="form-input" style="color:var(--text-secondary);display:block">bursar@xyzschool.edu.gh</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Password</label>
+              <div class="form-input" style="color:var(--text-secondary);display:block">••••••••••</div>
+            </div>
+            <button class="btn btn-primary btn-full" style="margin-top:24px;height:50px;font-size:14px;border-radius:12px">
+              Sign In →
+            </button>
+          </div>
+
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);margin-top:32px;letter-spacing:.06em">PayHub © 2025 — Secure Payment Platform</div>
+        </div>
+      </div>
+      <div class="screen-tag">Authentication · Login</div>
+    </div>
+
+  </div><!-- /screens-grid -->
+
+</div><!-- /mockup-page -->
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  const current = html.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  document.body.setAttribute('data-theme', next);
+  document.getElementById('theme-label').textContent = next.toUpperCase();
+}
+
+// Apply theme to html tag as well
+document.documentElement.setAttribute('data-theme', 'dark');
+</script>
+
+</body>
+</html>

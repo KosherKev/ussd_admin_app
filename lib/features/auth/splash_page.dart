@@ -25,7 +25,7 @@ class _SplashPageState extends State<SplashPage>
       duration: const Duration(milliseconds: 900),
     );
     _fadeIn = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
-    _scale  = Tween<double>(begin: 0.85, end: 1.0).animate(
+    _scale  = Tween<double>(begin: 0.88, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
     );
     _controller.forward();
@@ -80,76 +80,67 @@ class _SplashPageState extends State<SplashPage>
 
     return Scaffold(
       backgroundColor: c.background,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [c.surfaceMid, c.background, c.background],
-          ),
-        ),
-        child: Center(
-          child: FadeTransition(
-            opacity: _fadeIn,
-            child: ScaleTransition(
-              scale: _scale,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Logo
-                  Container(
-                    width: 96,
-                    height: 96,
+      body: Center(
+        child: FadeTransition(
+          opacity: _fadeIn,
+          child: ScaleTransition(
+            scale: _scale,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Sharp amber logo square — no glow shadow
+                Hero(
+                  tag: 'payhub-logo',
+                  child: Container(
+                    width: 80,
+                    height: 80,
                     decoration: BoxDecoration(
-                      gradient: AppGradients.amber(colors: c),
-                      borderRadius: BorderRadius.circular(AppRadius.xxl),
-                      boxShadow: [
-                        BoxShadow(
-                          color: c.primaryAmber.withValues(alpha: 0.35),
-                          blurRadius: 32,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
+                      color: c.primaryAmber,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
-                    child: const Icon(
-                      Icons.hub_rounded,
-                      size: 48,
-                      color: Colors.white,
-                    ),
-                  ),
-
-                  const SizedBox(height: AppSpacing.xl),
-
-                  Text(
-                    'PayHub',
-                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                          color: c.textPrimary,
+                    child: const Center(
+                      child: Text(
+                        'P',
+                        style: TextStyle(
+                          fontFamily: 'Sora',
+                          fontSize: 38,
                           fontWeight: FontWeight.w800,
-                          letterSpacing: -1,
+                          color: Colors.black,
+                          height: 1,
                         ),
-                  ),
-
-                  const SizedBox(height: AppSpacing.xs),
-
-                  Text(
-                    'Payment Management Platform',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: c.textSecondary,
-                        ),
-                  ),
-
-                  const SizedBox(height: AppSpacing.xxxl),
-
-                  SizedBox(
-                    width: 28,
-                    height: 28,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(c.primaryAmber),
+                      ),
                     ),
                   ),
-                ],
-              ),
+                ),
+
+                const SizedBox(height: AppSpacing.xl),
+
+                // PayHub wordmark — displayHero Sora
+                Text(
+                  'PayHub',
+                  style: AppTypography.displayHero(c.textPrimary),
+                ),
+
+                const SizedBox(height: AppSpacing.xs),
+
+                Text(
+                  'Payment Management Platform',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: c.textSecondary,
+                  ),
+                ),
+
+                const SizedBox(height: AppSpacing.xxxl),
+
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(c.primaryAmber),
+                  ),
+                ),
+              ],
             ),
           ),
         ),

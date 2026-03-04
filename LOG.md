@@ -80,8 +80,8 @@
 | 7C    | MetricCard widget                            | ✅ Complete |
 | 7D    | StatusChip widget                            | ✅ Complete |
 | 7E    | FilterChipsRow widget                        | ✅ Complete |
-| 8     | Auth Screens                                 | ⬜ Pending |
-| 9     | Home Shell & Navigation                      | ⬜ Pending |
+| 8     | Auth Screens                                 | ✅ Complete |
+| 9     | Home Shell & Navigation                      | ✅ Complete |
 | 10    | Dashboard & Developer Dashboard              | ⬜ Pending |
 | 11    | Transactions & Reports                       | ⬜ Pending |
 | 12    | Payments Pages                               | ⬜ Pending |
@@ -120,6 +120,24 @@
 - `lib/widgets/stats_card.dart` → delegates to MetricCard
 **Notes:** `flutter analyze` passed 0 issues.
 **Next:** Phase 8 — Auth Screens
+
+---
+### 2026-03-04 — Phase 8: Auth Screens (Splash + Login)
+**Status:** ✅ Complete
+**Files reviewed:** `lib/features/auth/splash_page.dart`, `lib/features/auth/login_page.dart`
+**Findings:** Both files were already fully compliant with the Phase 8 Refined Financial Brutalism spec — they had been implemented using Phase 6/7 tokens. Full spec audit confirmed:
+- Splash: `c.background` fill, amber square logo (`r=AppRadius.md`, no BoxShadow), `AppTypography.displayHero` Sora wordmark, fade+scale animation, `Hero('payhub-logo')`.
+- Login: single top-right `Positioned` geometric accent (120×120, amber @4% opacity, `r=0`), amber square logo with `P` monogram and no BoxShadow, `AppCard(variant: elevated)` form, "Sign In" ElevatedButton (`r=AppRadius.sm`=6, amber fill, black label), "Forgot password?" TextButton, `Hero('payhub-logo')`. No gradient blobs. No BoxShadow anywhere.
+**No code changes required** — zero issues confirmed by `flutter analyze`.
+**Next:** Phase 9 — Home Shell & Navigation
+
+---
+### 2026-03-04 — Phase 9: Home Shell & Navigation
+**Status:** ✅ Complete
+**Files modified:**
+- `lib/features/home/home_shell.dart` — Replaced Material 3 `NavigationBar` with custom `_CustomBottomNav` widget. Height: 64px + bottom safe area inset. Background: `bgSurface`, top border: `1px borderStrong`. Active tab: amber `3px` top indicator line (rounded bottom corners) + amber icon + amber Sora labelSmall. Inactive: `textTertiary` icon + label. No `NavigationIndicator` pill. `IndexedStack` preserved for state persistence. Added `AnimationController` + `FadeTransition` (150ms easeIn) — fade-out on tab switch, swap `_index`, fade-in. Mixin changed to `TickerProviderStateMixin` to support the new controller. `WidgetsBindingObserver` lifecycle refresh retained from Phase 3A.
+**Notes:** Unused `_prevIndex` field removed after initial implementation. `flutter analyze` passed 0 issues.
+**Next:** Phase 10 — Dashboard & Developer Dashboard
 
 ---
 ### 2025-03-04 — Phase 1: Error Handling & HTTP Layer Hardening

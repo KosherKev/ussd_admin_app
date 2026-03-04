@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
 import '../../shared/http/client.dart';
 import '../../shared/utils/helpers.dart';
 import '../../app/theme/app_theme.dart';
 import '../../app/router/routes.dart';
 import '../../shared/services/org_service.dart';
-import '../../widgets/glass_card.dart';
-import 'package:dio/dio.dart';
+import '../../widgets/app_card.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -31,10 +31,10 @@ class _LoginPageState extends State<LoginPage>
     super.initState();
     _animCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 700),
+      duration: const Duration(milliseconds: 600),
     );
     _fadeIn  = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
-    _slideUp = Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero)
+    _slideUp = Tween<Offset>(begin: const Offset(0, 0.06), end: Offset.zero)
         .animate(CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut));
     _animCtrl.forward();
   }
@@ -73,19 +73,15 @@ class _LoginPageState extends State<LoginPage>
       final orgId = user?['organizationId']?.toString();
       if (orgId != null && orgId.isNotEmpty) {
         await prefs.setString('org_id', orgId);
-
-        // 3B — persist org_name so the Dashboard greeting works
         try {
           final org = await OrgService().get(orgId);
           await prefs.setString('org_name', org.name);
         } catch (_) {
-          // Non-fatal: org name is cosmetic only; login still proceeds
+          // Non-fatal: org name is cosmetic
         }
       }
 
-      // 3C — persist key_id so the Developer Dashboard shows usage stats
-      // The API returns this as 'apiKeyId' on the user object.
-      // Field name is documented as best-effort; gracefully ignored if absent.
+      // Persist API key ID for Developer Dashboard
       final keyId = user?['apiKeyId']?.toString()
                  ?? user?['keyId']?.toString()
                  ?? user?['api_key_id']?.toString();
@@ -100,8 +96,10 @@ class _LoginPageState extends State<LoginPage>
       String msg = ErrorHandlers.getErrorMessage(e);
       if (e is DioException) {
         final code = e.response?.statusCode ?? 0;
-        final data = e.response?.data;
-        final srv  = (data is Map && data['message'] is String) ? data['message'] as String : null;
+        final body = e.response?.data;
+        final srv  = (body is Map && body['message'] is String)
+            ? body['message'] as String
+            : null;
         if (code == 401) {
           msg = srv ?? 'Invalid email or password.';
         } else if (code == 400) {
@@ -120,50 +118,37 @@ class _LoginPageState extends State<LoginPage>
 
   @override
   Widget build(BuildContext context) {
-    final c    = context.appColors;
-    final size = MediaQuery.of(context).size;
+    final c      = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final text   = Theme.of(context).textTheme;
 
     return Scaffold(
       backgroundColor: c.background,
       body: Stack(
         children: [
-          // Decorative gradient blobs
+          // Single top-right geometric accent — 120×120, amber @4% opacity,
+          // hard corner (r=0), partially off-screen right per spec.
           Positioned(
-            top: -size.height * 0.1,
-            right: -size.width * 0.2,
+            top: -20,
+            right: -20,
             child: Container(
-              width: size.width * 0.7,
-              height: size.width * 0.7,
+              width: 120,
+              height: 120,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(colors: [
-                  c.primaryAmber.withValues(alpha: 0.12),
-                  Colors.transparent,
-                ]),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -size.height * 0.05,
-            left: -size.width * 0.2,
-            child: Container(
-              width: size.width * 0.6,
-              height: size.width * 0.6,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(colors: [
-                  c.secondaryBlue.withValues(alpha: 0.1),
-                  Colors.transparent,
-                ]),
+                color: c.primaryAmber.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.zero,
               ),
             ),
           ),
 
-          // Content
+          // Main content
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSpacing.lg),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.xl,
+                ),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 420),
                   child: FadeTransition(
@@ -172,52 +157,66 @@ class _LoginPageState extends State<LoginPage>
                       position: _slideUp,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // Logo
-                          Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              gradient: AppGradients.amber(colors: c),
-                              borderRadius: BorderRadius.circular(AppRadius.xl),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: c.primaryAmber.withValues(alpha: 0.30),
-                                  blurRadius: 24,
-                                  offset: const Offset(0, 8),
+                          // Logo — sharp amber square, P monogram, no BoxShadow
+                          Center(
+                            child: Hero(
+                              tag: 'payhub-logo',
+                              child: Container(
+                                width: 64,
+                                height: 64,
+                                decoration: BoxDecoration(
+                                  color: c.primaryAmber,
+                                  borderRadius: BorderRadius.circular(AppRadius.md),
                                 ),
-                              ],
+                                child: const Center(
+                                  child: Text(
+                                    'P',
+                                    style: TextStyle(
+                                      fontFamily: 'Sora',
+                                      fontSize: 30,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.black,
+                                      height: 1,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
-                            child: const Icon(Icons.hub_rounded, size: 40, color: Colors.white),
                           ),
 
                           const SizedBox(height: AppSpacing.xl),
 
+                          // Heading
                           Text(
                             'Welcome back',
-                            style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                                  color: c.textPrimary,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: -0.5,
-                                ),
+                            style: text.displayMedium?.copyWith(
+                              color: c.textPrimary,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.5,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: AppSpacing.xs),
                           Text(
                             'Sign in to your PayHub account',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: c.textSecondary,
-                                ),
+                            style: text.bodyMedium?.copyWith(color: c.textSecondary),
+                            textAlign: TextAlign.center,
                           ),
 
                           const SizedBox(height: AppSpacing.xxl),
 
-                          // Form card
-                          GlassCard(
+                          // Form card — elevated variant
+                          AppCard(
+                            variant: AppCardVariant.elevated,
+                            padding: const EdgeInsets.all(AppSpacing.lg),
                             child: Form(
                               key: _formKey,
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
+                                  // Email field
                                   TextFormField(
                                     controller: _emailController,
                                     decoration: const InputDecoration(
@@ -230,7 +229,10 @@ class _LoginPageState extends State<LoginPage>
                                     enableSuggestions: false,
                                     validator: Validators.email,
                                   ),
+
                                   const SizedBox(height: AppSpacing.md),
+
+                                  // Password field
                                   TextFormField(
                                     controller: _passController,
                                     decoration: InputDecoration(
@@ -243,7 +245,8 @@ class _LoginPageState extends State<LoginPage>
                                               : Icons.visibility_outlined,
                                         ),
                                         onPressed: () => setState(
-                                            () => _obscurePassword = !_obscurePassword),
+                                          () => _obscurePassword = !_obscurePassword,
+                                        ),
                                       ),
                                     ),
                                     obscureText: _obscurePassword,
@@ -251,27 +254,67 @@ class _LoginPageState extends State<LoginPage>
                                     autocorrect: false,
                                     enableSuggestions: false,
                                     onFieldSubmitted: (_) => _submit(),
-                                    validator: (v) => Validators.required(v, fieldName: 'Password'),
+                                    validator: (v) =>
+                                        Validators.required(v, fieldName: 'Password'),
                                   ),
+
                                   const SizedBox(height: AppSpacing.lg),
+
+                                  // Sign In button — sharp r=6, amber fill, dark label
                                   SizedBox(
                                     height: 52,
                                     child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: c.primaryAmber,
+                                        foregroundColor: Colors.black,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(AppRadius.sm),
+                                        ),
+                                        elevation: 0,
+                                      ),
                                       onPressed: _loading ? null : _submit,
                                       child: _loading
                                           ? SizedBox(
-                                              height: 20,
                                               width: 20,
+                                              height: 20,
                                               child: CircularProgressIndicator(
                                                 strokeWidth: 2,
-                                                valueColor: AlwaysStoppedAnimation<Color>(
-                                                  Theme.of(context).brightness == Brightness.dark
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<Color>(
+                                                  isDark
                                                       ? Colors.black
                                                       : Colors.white,
                                                 ),
                                               ),
                                             )
-                                          : const Text('Sign In'),
+                                          : Text(
+                                              'Sign In',
+                                              style: text.labelLarge?.copyWith(
+                                                color: Colors.black,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                    ),
+                                  ),
+
+                                  // Forgot password link
+                                  const SizedBox(height: AppSpacing.sm),
+                                  TextButton(
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: c.textSecondary,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: AppSpacing.xs,
+                                      ),
+                                    ),
+                                    // No route defined yet — spec says navigation
+                                    // target is null for now.
+                                    onPressed: () {},
+                                    child: Text(
+                                      'Forgot password?',
+                                      style: text.bodySmall?.copyWith(
+                                        color: c.textSecondary,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -281,11 +324,11 @@ class _LoginPageState extends State<LoginPage>
 
                           const SizedBox(height: AppSpacing.xl),
 
+                          // Footer
                           Text(
                             'PayHub © 2025',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: c.textTertiary,
-                                ),
+                            style: text.bodySmall?.copyWith(color: c.textTertiary),
+                            textAlign: TextAlign.center,
                           ),
                         ],
                       ),
