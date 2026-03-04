@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import '../app/theme/app_theme.dart';
+import 'package:ussd_admin/widgets/app_card.dart';
 
-/// A frosted-glass style card that adapts to light/dark theme.
+/// Legacy GlassCard — now delegates to AppCard.
+/// Kept for backward compatibility during migration.
 class GlassCard extends StatelessWidget {
-  final Widget child;
-  final EdgeInsetsGeometry? padding;
-  final VoidCallback? onTap;
-
   const GlassCard({
     super.key,
     required this.child,
@@ -14,33 +11,17 @@ class GlassCard extends StatelessWidget {
     this.onTap,
   });
 
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
-    final c = context.appColors;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final card = Container(
-      decoration: BoxDecoration(
-        color: c.surfaceLow,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: c.glassBorder, width: 1),
-        boxShadow: AppShadows.md(isDark),
-      ),
-      padding: padding ?? const EdgeInsets.all(AppSpacing.md),
+    return AppCard(
+      variant: AppCardVariant.base,
+      padding: padding,
+      onTap: onTap,
       child: child,
     );
-
-    if (onTap != null) {
-      return Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          child: card,
-        ),
-      );
-    }
-    return card;
   }
 }

@@ -73,13 +73,13 @@
 | 5C    | Infinite scroll duplicate load guard         | ✅ Complete |
 | 5D    | Export CSV page-scope label                  | ✅ Complete |
 | 5E    | PaymentTypeEdit white text light mode fix    | ✅ Complete |
-| 6     | Design Token Overhaul                        | ⬜ Pending |
-| 7     | Shared Widget Replacement                    | ⬜ Pending |
-| 7A    | AppCard widget                               | ⬜ Pending |
-| 7B    | PageHeader widget                            | ⬜ Pending |
-| 7C    | MetricCard widget                            | ⬜ Pending |
-| 7D    | StatusChip widget                            | ⬜ Pending |
-| 7E    | FilterChipsRow widget                        | ⬜ Pending |
+| 6     | Design Token Overhaul                        | ✅ Complete |
+| 7     | Shared Widget Replacement                    | ✅ Complete |
+| 7A    | AppCard widget                               | ✅ Complete |
+| 7B    | PageHeader widget                            | ✅ Complete |
+| 7C    | MetricCard widget                            | ✅ Complete |
+| 7D    | StatusChip widget                            | ✅ Complete |
+| 7E    | FilterChipsRow widget                        | ✅ Complete |
 | 8     | Auth Screens                                 | ⬜ Pending |
 | 9     | Home Shell & Navigation                      | ⬜ Pending |
 | 10    | Dashboard & Developer Dashboard              | ⬜ Pending |
@@ -96,6 +96,30 @@
 ## Completed Entries
 
 *(No entries yet. Append new entries here as sub-phases are completed.)*
+
+---
+### 2026-03-04 — Phase 6: Design Token Overhaul
+**Status:** ✅ Complete
+**Files modified:**
+- `lib/app/theme/app_theme.dart` — Full rewrite. New surface hierarchy (`bgSurface`, `bgRaised`, `bgHigh`, `bgOverlay`). Refined Financial Brutalism palettes: dark (#080B0F base, #E8831C amber) and light (#F3F4F7 base, #C96A00 amber). New tokens: `borderStrong`, `textMono` (blue-grey for refs), `amberBg`, `amberBorder`, semantic bg/border variants for success/warning/error/info. Typography switched from Inter to **Sora** (UI) + **DM Mono** (codes/refs) via GoogleFonts. Added `AppTypography.displayHero` (56px Sora w800) and `AppTypography.labelMono`/`monoBody` static helpers. `AppRadius` reduced to xs=4/sm=6/md=10/lg=14/xl=18/xxl=22. `AppGradients.amber` is now clean 2-stop linear (amber → amber@70% opacity). `AppShadows.cardDecoration` added as border-based alternative to BoxShadow. All old names kept as aliases for backward compat.
+**Notes:** `flutter analyze` passed 0 issues.
+**Next:** Phase 7 — Shared Widget Replacement
+
+---
+### 2026-03-04 — Phase 7: Shared Widget Replacement
+**Status:** ✅ Complete
+**Files created:**
+- `lib/widgets/app_card.dart` (7A) — AppCard with 3 variants: `base` (bgSurface + 1px borderStrong), `elevated` (bgRaised + border), `accent` (3px left colour bar + bgSurface). Supports onTap, custom padding, custom radius.
+- `lib/widgets/page_header.dart` (7B) — PageHeader: plain bgBase, Sora titleLarge + optional subtitle. accentIcon left, trailing right. No gradient.
+- `lib/widgets/metric_card.dart` (7C) — MetricCard: 26px Sora hero number, top-right icon with colour-tinted backing, optional trend badge in DM Mono.
+- `lib/widgets/status_chip.dart` (7D) — StatusChip: semantic token colours (success/warning/error/info/amber). Case-insensitive status matching. DM Mono label.
+- `lib/widgets/filter_chips_row.dart` (7E) — FilterChipsRow: horizontal scrollable chip row, animated active state (amber fill), optional "All" chip.
+**Files modified (backward-compat wrappers):**
+- `lib/widgets/glass_card.dart` → delegates to AppCard.base
+- `lib/widgets/gradient_header.dart` → delegates to PageHeader
+- `lib/widgets/stats_card.dart` → delegates to MetricCard
+**Notes:** `flutter analyze` passed 0 issues.
+**Next:** Phase 8 — Auth Screens
 
 ---
 ### 2025-03-04 — Phase 1: Error Handling & HTTP Layer Hardening
