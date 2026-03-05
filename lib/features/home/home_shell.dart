@@ -10,6 +10,7 @@ import '../settings/profile_page.dart';
 import '../developer/developer_dashboard_page.dart';
 import '../developer/developer_transactions_page.dart';
 import '../developer/webhooks_list_page.dart';
+import '../developer/api_keys_page.dart';
 
 class HomeShell extends StatefulWidget {
   final int initialIndex;
@@ -102,6 +103,7 @@ class _HomeShellState extends State<HomeShell>
     const DeveloperDashboardPage(),
     const DeveloperTransactionsPage(),
     const WebhooksListPage(),
+    const ApiKeysPage(),
     const ProfilePage(),
   ];
 
@@ -109,6 +111,7 @@ class _HomeShellState extends State<HomeShell>
     _NavItem(icon: Icons.analytics_outlined,    label: 'Dashboard'),
     _NavItem(icon: Icons.receipt_long_outlined, label: 'Transactions'),
     _NavItem(icon: Icons.webhook_outlined,      label: 'Webhooks'),
+    _NavItem(icon: Icons.key_outlined,          label: 'API Keys'),
     _NavItem(icon: Icons.settings_outlined,     label: 'Settings'),
   ];
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../app/theme/app_theme.dart';
 import '../../shared/utils/helpers.dart';
 import '../../shared/models/webhook_delivery.dart';
@@ -32,17 +33,24 @@ class _WebhookDeliveryDetailPageState
   WebhookDeliveryDetail? _detail;
   bool    _loading = true;
   String? _error;
+  String? _orgId;
 
   @override
   void initState() {
     super.initState();
+    _loadOrgId();
+  }
+
+  Future<void> _loadOrgId() async {
+    final prefs = await SharedPreferences.getInstance();
+    _orgId = prefs.getString('org_id');
     _load();
   }
 
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final d = await _service.getWebhookDelivery(widget.deliveryId);
+      final d = await _service.getWebhookDelivery(_orgId ?? '', widget.deliveryId);
       if (mounted) setState(() { _detail = d; _loading = false; });
     } catch (e) {
       if (mounted) {
