@@ -315,7 +315,7 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
                 _LimitCell(label: 'Max',
                     value: CurrencyFormatters.formatGHS(type.maxAmount), c: c),
                 _LimitDivider(c: c),
-                _LimitCell(label: 'Txns', value: '—', c: c),
+                _LimitCell(label: 'Txns', value: type.transactionCount.toString(), c: c),
               ]),
             ),
 

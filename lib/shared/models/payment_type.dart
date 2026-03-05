@@ -6,6 +6,7 @@ class PaymentType {
   final bool enabled;
   final double minAmount;
   final double maxAmount;
+  final int    transactionCount;
 
   PaymentType({
     required this.id,
@@ -15,6 +16,7 @@ class PaymentType {
     required this.enabled,
     required this.minAmount,
     required this.maxAmount,
+    this.transactionCount = 0,
   });
 
   factory PaymentType.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,7 @@ class PaymentType {
       enabled: json['enabled'] == true,
       minAmount: (json['minAmount'] as num?)?.toDouble() ?? 0.0,
       maxAmount: (json['maxAmount'] as num?)?.toDouble() ?? 10000.0,
+      transactionCount: (json['transactionCount'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -48,6 +51,7 @@ class PaymentType {
     bool? enabled,
     double? minAmount,
     double? maxAmount,
+    int? transactionCount,
   }) {
     return PaymentType(
       id: id ?? this.id,
@@ -57,6 +61,7 @@ class PaymentType {
       enabled: enabled ?? this.enabled,
       minAmount: minAmount ?? this.minAmount,
       maxAmount: maxAmount ?? this.maxAmount,
+      transactionCount: transactionCount ?? this.transactionCount,
     );
   }
 }

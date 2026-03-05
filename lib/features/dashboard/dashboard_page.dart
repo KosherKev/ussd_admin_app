@@ -6,6 +6,7 @@ import '../../app/theme/app_theme.dart';
 import '../../app/router/routes.dart';
 import '../../shared/utils/helpers.dart';
 import '../../shared/models/transaction.dart';
+import '../../shared/models/org_summary.dart';
 import '../../shared/services/reports_service.dart';
 import '../../shared/services/org_service.dart';
 import '../../widgets/app_card.dart';
@@ -25,13 +26,14 @@ class _DashboardPageState extends State<DashboardPage> {
   bool               _loading     = true;
   String?            _error;
   String?            _orgName;
-  List<Transaction>  _recent      = [];
-  int                _totalTxns   = 0;
-  double             _totalAmount = 0;
-  double             _totalComm   = 0;
-  Map<DateTime, int> _dailyCounts = {};
-  Map<String, int>   _typeCounts  = {};
-  Map<String, double>_typeAmounts = {};
+  List<Transaction>       _recent      = [];
+  int                     _totalTxns   = 0;
+  double                  _totalAmount = 0;
+  double                  _totalComm   = 0;
+  Map<DateTime, int>      _dailyCounts = {};
+  Map<String, int>        _typeCounts  = {};
+  Map<String, double>     _typeAmounts = {};
+  List<OrgSummaryStats>   _summaryStats = [];
 
   @override
   void initState() {
@@ -53,22 +55,45 @@ class _DashboardPageState extends State<DashboardPage> {
         } catch (_) {}
       }
 
-      final result = await _reportsService.getTransactions(
-        organizationId: widget.orgId.isNotEmpty ? widget.orgId : null,
-        startDate: DateFormatters.sevenDaysAgo,
-        endDate:   DateTime.now(),
-        page: 1, limit: 10,
-      );
+      // Fetch recent transactions + all-time org summary in parallel
+      final futures = await Future.wait([
+        _reportsService.getTransactions(
+          organizationId: widget.orgId.isNotEmpty ? widget.orgId : null,
+          startDate: DateFormatters.sevenDaysAgo,
+          endDate:   DateTime.now(),
+          page: 1, limit: 50,
+        ),
+        if (widget.orgId.isNotEmpty)
+          _reportsService.getOrgSummary(
+            widget.orgId,
+            startDate: DateFormatters.sevenDaysAgo,
+            endDate:   DateTime.now(),
+          )
+        else
+          Future.value(<OrgSummaryStats>[]),
+      ]);
 
-      _recent      = result.items;
-      _totalTxns   = result.total;
-      _totalAmount = _recent.fold(0.0, (s, t) => s + t.amount);
-      _totalComm   = _recent.fold(0.0, (s, t) => s + t.commission);
-      _dailyCounts = _buildDailyCounts(_recent);
+      final result  = futures[0]! as dynamic;
+      final summary = futures[1]! as List<OrgSummaryStats>;
+
+      _recent      = result.items as List<Transaction>;
+      _totalTxns   = result.total as int;
+      _summaryStats = summary;
+
+      // Use summary aggregates for totals (covers ALL transactions, not just fetched page)
+      if (summary.isNotEmpty) {
+        _totalAmount = summary.fold(0.0, (s, e) => s + e.totalAmount);
+        _totalComm   = summary.fold(0.0, (s, e) => s + (e.totalAmount * 0.015)); // 1.5% est.
+      } else {
+        _totalAmount = (_recent as List<Transaction>).fold(0.0, (s, t) => s + t.amount);
+        _totalComm   = (_recent as List<Transaction>).fold(0.0, (s, t) => s + t.commission);
+      }
+
+      _dailyCounts = _buildDailyCounts(_recent as List<Transaction>);
 
       final bCounts  = <String, int>{};
       final bAmounts = <String, double>{};
-      for (final t in _recent) {
+      for (final t in _recent as List<Transaction>) {
         bCounts[t.paymentType]  = (bCounts[t.paymentType]  ?? 0) + 1;
         bAmounts[t.paymentType] = (bAmounts[t.paymentType] ?? 0) + t.amount;
       }

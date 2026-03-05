@@ -81,4 +81,15 @@ class ReportsService {
     
     return stats;
   }
+
+  /// Force re-query Paystack for a transaction stuck in "processing".
+  /// POST /api/v1/payments/:ref/verify
+  /// Returns { status: string, changed: bool }
+  Future<Map<String, dynamic>> verifyTransaction(String transactionRef) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    final dio   = buildDio(token: token);
+    final res   = await dio.post('/v1/payments/$transactionRef/verify');
+    return res.data as Map<String, dynamic>;
+  }
 }
