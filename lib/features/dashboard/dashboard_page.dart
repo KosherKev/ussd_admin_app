@@ -6,7 +6,6 @@ import '../../app/theme/app_theme.dart';
 import '../../app/router/routes.dart';
 import '../../shared/utils/helpers.dart';
 import '../../shared/models/transaction.dart';
-import '../../shared/models/ussd_session_stats.dart';
 import '../../shared/services/reports_service.dart';
 import '../../shared/services/org_service.dart';
 import '../../widgets/app_card.dart';
@@ -34,10 +33,6 @@ class _DashboardPageState extends State<DashboardPage> {
   Map<String, int>   _typeCounts  = {};
   Map<String, double>_typeAmounts = {};
 
-  List<UssdSessionStats> _ussdStats      = [];
-  int                    _ussdTotal      = 0;
-  double                 _ussdCompletion = 0;
-
   @override
   void initState() {
     super.initState();
@@ -58,24 +53,15 @@ class _DashboardPageState extends State<DashboardPage> {
         } catch (_) {}
       }
 
-      final results = await Future.wait([
-        _reportsService.getTransactions(
-          organizationId: widget.orgId.isNotEmpty ? widget.orgId : null,
-          startDate: DateFormatters.sevenDaysAgo,
-          endDate:   DateTime.now(),
-          page: 1, limit: 10,
-        ),
-        _reportsService.getUssdSessions(
-          startDate: DateFormatters.sevenDaysAgo,
-          endDate:   DateTime.now(),
-        ),
-      ]);
+      final result = await _reportsService.getTransactions(
+        organizationId: widget.orgId.isNotEmpty ? widget.orgId : null,
+        startDate: DateFormatters.sevenDaysAgo,
+        endDate:   DateTime.now(),
+        page: 1, limit: 10,
+      );
 
-      final result    = results[0] as dynamic;
-      final ussdStats = results[1] as List<UssdSessionStats>;
-
-      _recent      = result.items as List<Transaction>;
-      _totalTxns   = result.total as int;
+      _recent      = result.items;
+      _totalTxns   = result.total;
       _totalAmount = _recent.fold(0.0, (s, t) => s + t.amount);
       _totalComm   = _recent.fold(0.0, (s, t) => s + t.commission);
       _dailyCounts = _buildDailyCounts(_recent);
@@ -88,13 +74,6 @@ class _DashboardPageState extends State<DashboardPage> {
       }
       _typeCounts  = bCounts;
       _typeAmounts = bAmounts;
-
-      _ussdStats = ussdStats;
-      _ussdTotal = ussdStats.fold(0, (s, e) => s + e.count);
-      final completed = ussdStats
-          .where((e) => e.status.toLowerCase() == 'completed')
-          .fold(0, (s, e) => s + e.count);
-      _ussdCompletion = _ussdTotal == 0 ? 0.0 : (completed / _ussdTotal) * 100;
 
       if (mounted) setState(() => _loading = false);
     } catch (e) {
@@ -213,7 +192,7 @@ class _DashboardPageState extends State<DashboardPage> {
       _buildHeroCard(c),
       const SizedBox(height: AppSpacing.sm),
 
-      // 2-col metric grid (no icons — matches mockup .stat-cell)
+      // 2-col metric grid
       Row(children: [
         Expanded(child: MetricCard(
           label: 'TRANSACTIONS',
@@ -225,21 +204,6 @@ class _DashboardPageState extends State<DashboardPage> {
           value: 'GHS ${CurrencyFormatters.formatNumber(_totalComm.round())}',
         )),
       ]),
-      if (_ussdStats.isNotEmpty) ...[
-        const SizedBox(height: AppSpacing.sm),
-        Row(children: [
-          Expanded(child: MetricCard(
-            label: 'USSD SESSIONS',
-            value: CurrencyFormatters.formatNumber(_ussdTotal),
-          )),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(child: MetricCard(
-            label:      'COMPLETION',
-            value:      '${_ussdCompletion.toStringAsFixed(1)}%',
-            valueColor: _ussdCompletion >= 70 ? c.success : c.warning,
-          )),
-        ]),
-      ],
 
       const SizedBox(height: AppSpacing.lg),
       _buildSectionLabel('DAILY ACTIVITY', c),
@@ -247,26 +211,16 @@ class _DashboardPageState extends State<DashboardPage> {
       _buildFlBarChart(c),
 
       const SizedBox(height: AppSpacing.lg),
-      Row(children: [
-        Expanded(child: _buildQuickAction(
-          icon:  Icons.bar_chart_rounded,
-          label: 'Org Summary',
-          color: c.info,
-          onTap: widget.orgId.isNotEmpty
-              ? () => Navigator.pushNamed(context, Routes.reportsOrgSummary,
-                        arguments: widget.orgId)
-              : null,
-          c: c,
-        )),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(child: _buildQuickAction(
-          icon:  Icons.account_balance_rounded,
-          label: 'Payouts',
-          color: c.success,
-          onTap: () => Navigator.pushNamed(context, Routes.payouts),
-          c: c,
-        )),
-      ]),
+      _buildQuickAction(
+        icon:  Icons.bar_chart_rounded,
+        label: 'Org Summary',
+        color: c.info,
+        onTap: widget.orgId.isNotEmpty
+            ? () => Navigator.pushNamed(context, Routes.reportsOrgSummary,
+                      arguments: widget.orgId)
+            : null,
+        c: c,
+      ),
 
       if (_typeCounts.isNotEmpty) ...[
         const SizedBox(height: AppSpacing.lg),

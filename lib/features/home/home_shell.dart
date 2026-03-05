@@ -5,7 +5,6 @@ import '../../app/router/routes.dart';
 import '../../shared/utils/helpers.dart';
 import '../dashboard/dashboard_page.dart';
 import '../payments/payment_types_list_page.dart';
-import '../payouts/payouts_page.dart';
 import '../reports/transactions_page.dart';
 import '../settings/profile_page.dart';
 import '../developer/developer_dashboard_page.dart';
@@ -88,16 +87,14 @@ class _HomeShellState extends State<HomeShell>
     DashboardPage(orgId: _orgId),
     PaymentTypesListPage(orgId: _orgId, embedded: true),
     const TransactionsPage(),
-    const PayoutsPage(),
     const ProfilePage(),
   ];
 
   static const _orgAdminNavItems = <_NavItem>[
-    _NavItem(icon: Icons.dashboard_outlined,      label: 'Dashboard'),
-    _NavItem(icon: Icons.payment_outlined,         label: 'Payments'),
-    _NavItem(icon: Icons.receipt_long_outlined,    label: 'Reports'),
-    _NavItem(icon: Icons.account_balance_outlined, label: 'Payouts'),
-    _NavItem(icon: Icons.settings_outlined,        label: 'Settings'),
+    _NavItem(icon: Icons.dashboard_outlined,   label: 'Dashboard'),
+    _NavItem(icon: Icons.payment_outlined,      label: 'Payments'),
+    _NavItem(icon: Icons.receipt_long_outlined, label: 'Reports'),
+    _NavItem(icon: Icons.settings_outlined,     label: 'Settings'),
   ];
 
   // ── Developer tabs ────────────────────────────────────────────────────────

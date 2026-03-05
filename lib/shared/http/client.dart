@@ -36,24 +36,33 @@ Dio buildDio({String? token}) {
     },
     onError: (DioException error, handler) async {
       if (error.response?.statusCode == 401) {
-        // Token expired or invalid — clear session and redirect to login.
-        // This runs at the Dio layer so no BuildContext is needed.
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.remove('token');
-        await prefs.remove('role');
-        await prefs.remove('org_id');
-        await prefs.remove('org_name');
-        await prefs.remove('dev_mode');
-        await prefs.remove('key_id');
-        await prefs.remove('email');
+        // Only treat as session expiry if it's NOT an API-key-related error.
+        // /v1/* endpoints require an x-api-key header and return 401 with
+        // INVALID_API_KEY when accessed with a Bearer token — we must NOT
+        // clear the session in that case.
+        final body   = error.response?.data;
+        final errCode = (body is Map ? body['error']?.toString() ?? '' : '');
+        final isApiKeyError = errCode.toUpperCase().contains('API_KEY') ||
+            errCode.toUpperCase().contains('INVALID_KEY');
 
-        final nav = navigatorKey.currentState;
-        if (nav != null) {
-          nav.pushNamedAndRemoveUntil(Routes.login, (_) => false);
+        if (!isApiKeyError) {
+          // Real token expiry — clear session and redirect to login.
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.remove('token');
+          await prefs.remove('role');
+          await prefs.remove('org_id');
+          await prefs.remove('org_name');
+          await prefs.remove('dev_mode');
+          await prefs.remove('key_id');
+          await prefs.remove('email');
+
+          final nav = navigatorKey.currentState;
+          if (nav != null) {
+            nav.pushNamedAndRemoveUntil(Routes.login, (_) => false);
+          }
+          handler.reject(error);
+          return;
         }
-        // Reject the error so callers don't also show a snackbar after redirect
-        handler.reject(error);
-        return;
       }
       handler.next(error);
     },

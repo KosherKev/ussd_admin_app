@@ -80,70 +80,111 @@ class _SplashPageState extends State<SplashPage>
 
     return Scaffold(
       backgroundColor: c.background,
-      body: Center(
-        child: FadeTransition(
-          opacity: _fadeIn,
-          child: ScaleTransition(
-            scale: _scale,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Sharp amber logo square — no glow shadow
-                Hero(
-                  tag: 'payhub-logo',
-                  child: Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: c.primaryAmber,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'P',
-                        style: TextStyle(
-                          fontFamily: 'Sora',
-                          fontSize: 38,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.black,
-                          height: 1,
+      body: Stack(
+        children: [
+          // Ambient glow — amber bottom-right (matches login screen)
+          Positioned(
+            bottom: -60,
+            right: -60,
+            child: Container(
+              width: 280,
+              height: 280,
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  colors: [
+                    c.primaryAmber.withValues(alpha: 0.07),
+                    Colors.transparent,
+                  ],
+                ),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          // Ambient glow — blue top-left
+          Positioned(
+            top: -40,
+            left: -40,
+            child: Container(
+              width: 200,
+              height: 200,
+              decoration: const BoxDecoration(
+                gradient: RadialGradient(
+                  colors: [
+                    Color(0x0F3A7FBB),
+                    Colors.transparent,
+                  ],
+                ),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          // Main content
+          Center(
+            child: FadeTransition(
+              opacity: _fadeIn,
+              child: ScaleTransition(
+                scale: _scale,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Sharp amber logo square — no glow shadow
+                    Hero(
+                      tag: 'payhub-logo',
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: c.primaryAmber,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            'P',
+                            style: TextStyle(
+                              fontFamily: 'Sora',
+                              fontSize: 38,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.black,
+                              height: 1,
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
+
+                    const SizedBox(height: AppSpacing.xl),
+
+                    // PayHub wordmark
+                    Text(
+                      'PayHub',
+                      style: AppTypography.displayHero(c.textPrimary),
+                    ),
+
+                    const SizedBox(height: AppSpacing.xs),
+
+                    Text(
+                      'Payment Management Platform',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: c.textSecondary,
+                      ),
+                    ),
+
+                    const SizedBox(height: AppSpacing.xxxl),
+
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(c.primaryAmber),
+                      ),
+                    ),
+                  ],
                 ),
-
-                const SizedBox(height: AppSpacing.xl),
-
-                // PayHub wordmark — displayHero Sora
-                Text(
-                  'PayHub',
-                  style: AppTypography.displayHero(c.textPrimary),
-                ),
-
-                const SizedBox(height: AppSpacing.xs),
-
-                Text(
-                  'Payment Management Platform',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: c.textSecondary,
-                  ),
-                ),
-
-                const SizedBox(height: AppSpacing.xxxl),
-
-                SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(c.primaryAmber),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

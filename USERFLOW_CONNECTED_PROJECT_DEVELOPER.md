@@ -305,31 +305,123 @@ PayHub verifies the signature server-side. Requests older than 5 minutes are rej
 
 ---
 
-## Flow 7 — Debugging Webhook Deliveries
+## Flow 7 — Developer Dashboard (API Key Stats & Usage)
 
-**Use case:** Developer notices a payment completed but their server didn't receive the webhook.
+**Who this is for:** The org admin viewing the Developer tab of their PayHub dashboard. The dashboard calls these endpoints using the **same JWT Bearer token** from the admin session — no API key required.
+
+**How the dashboard resolves the correct org:**
 
 ```
-1. List recent delivery records for the transaction
-   GET /api/v1/webhooks/deliveries?transactionRef=TXN-...
-   →  [ { status: "permanently_failed", attemptCount: 7, lastAttempt: { responseStatus: 503 } } ]
+1. GET /api/auth/me
+   → { user: { organizationId: "69a1ef...", apiKeyId: "69a27c...", ... } }
+   → Store organizationId — used for all org-scoped dashboard calls
+   → apiKeyId is informational only (most recently active key); not used as a URL param
+```
 
-2. Get full attempt history
-   GET /api/v1/webhooks/deliveries/:delivery_id
-   →  { attempts: [ { attemptedAt, responseStatus, responseBody, durationMs }, ... ] }
+**Loading the usage overview:**
 
-3. Common issues:
-   - responseStatus 404 → webhook URL path changed — update via super admin: PATCH /api/v1/keys/:id
-   - responseStatus 401 → your server is rejecting PayHub's requests — check signature verification logic
-   - timeout (durationMs > 10000) → your handler is too slow — acknowledge with 200 immediately, process async
+```
+2. GET /api/orgs/:organizationId/usage?from=<iso>&to=<iso>
+   Headers: { Authorization: "Bearer <session_token>" }
+   →  {
+        success: true,
+        data: {
+          key: {
+            id: "69a27c...",
+            projectName: "HostelConnect Live",
+            environment: "live",
+            keyPrefix: "sk_live_34ac****",
+            isActive: true,
+            lastUsedAt: "2026-03-04T11:32:00.000Z",
+            lifetimeUsage: { totalRequests: 1200, totalPayments: 920, totalVolume: 18400.0 }
+          },
+          period: { from: "...", to: "...", days: 30 },
+          transactions: {
+            total: 920, completed: 884, failed: 36, processing: 0,
+            successRate: 96.1,
+            totalVolume: 18400.0, totalNetVolume: 17840.0, totalCommission: 560.0,
+            byChannel: { mobileMoney: 680, card: 205, ussdBridge: 35 }
+          },
+          webhooks: { total: 920, delivered: 901, failed: 12, retrying: 7, successRate: 97.9 },
+          daily: [ { date: "2026-03-01", total: 45, completed: 43, volume: 900.0 }, ... ]
+        }
+      }
+   →  If the org has no active API key yet, data.key is null
+   →  Transactions aggregate ALL sources (API, USSD, web) for the org
+```
 
-4. Once fixed, the next real payment will trigger a fresh delivery
-   (Failed deliveries are not re-triggered manually — wait for the next event)
+**Loading the Webhooks tab:**
+
+```
+3. GET /api/orgs/:organizationId/webhook-deliveries?page=1&limit=20
+   Headers: { Authorization: "Bearer <session_token>" }
+   →  { success: true, page: 1, total: 143, items: [
+         { transactionRef: "TXN-...", event: "payment.completed",
+           status: "delivered", attemptCount: 1,
+           attempts: [ { attemptedAt: "...", responseStatus: 200, durationMs: 142 } ] }
+      ] }
+
+   Filter to a specific transaction:
+   GET /api/orgs/:organizationId/webhook-deliveries?transactionRef=TXN-...
+
+   Filter by status:
+   GET /api/orgs/:organizationId/webhook-deliveries?status=permanently_failed
+```
+
+**Managing API keys (org admin self-service):**
+
+```
+4. List my org's keys
+   GET /api/v1/keys
+   Headers: { Authorization: "Bearer <session_token>" }
+   →  Only keys for this org are returned (scoped automatically by role)
+
+5. Provision a new key
+   POST /api/v1/keys
+   Body: { projectName: "HostelConnect Staging", environment: "test",
+           scopes: ["payments:write", "payments:read"],
+           webhookUrl: "https://staging.hostelconnect.app/webhooks/payhub" }
+   →  { secretKey: "sk_test_...", keyPrefix: "sk_test_xxxx****", ... }
+   →  Store secretKey immediately — shown only once
+
+6. Revoke a key
+   DELETE /api/v1/keys/:id
+   →  { message: "Key for 'HostelConnect Staging' has been revoked." }
+
+   Note: org_admin cannot grant keys:manage or payments:split_override.
+   If those scopes are needed, request them from the super admin.
 ```
 
 ---
 
-## Flow 8 — Split Code Override (External Platforms)
+## Flow 8 — Debugging Webhook Deliveries
+
+**Use case:** Developer notices a payment completed but their server didn't receive the webhook.
+
+```
+1. List recent delivery records for the transaction (Bearer auth)
+   GET /api/orgs/:organizationId/webhook-deliveries?transactionRef=TXN-...
+   Headers: { Authorization: "Bearer <session_token>" }
+   →  [ { status: "permanently_failed", attemptCount: 7,
+           attempts: [ { responseStatus: 503, durationMs: 9800 }, ... ] } ]
+
+2. Common issues:
+   - responseStatus 404 → webhook URL path changed
+     → update via: PATCH /api/v1/keys/:id  Body: { webhookUrl: "..." }
+   - responseStatus 401 → your server is rejecting PayHub's requests
+     → check your signature verification logic (see Flow 6)
+   - timeout (durationMs > 10000) → your handler is too slow
+     → acknowledge with 200 immediately, process async
+
+3. Once fixed, the next real payment will trigger a fresh delivery
+   (Failed deliveries are not re-triggered manually — wait for the next event)
+```
+
+> The `/api/orgs/:id/webhook-deliveries` endpoint uses Bearer JWT auth. The older `/v1/webhooks/deliveries` endpoint requires an `x-api-key` header and is for server-to-server use. Use the org endpoint from the dashboard.
+
+---
+
+## Flow 9 — Split Code Override (External Platforms)
 
 **Who this is for:** Developers building platforms where each merchant has their own Paystack subaccount — for example, a rental platform where each property manager receives their share of rent directly, or a marketplace where each seller gets paid out independently.
 

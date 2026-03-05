@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../app/theme/app_theme.dart';
 import '../../shared/utils/helpers.dart';
 import '../../shared/models/transaction.dart';
@@ -37,9 +38,17 @@ class _DeveloperTransactionsPageState
   int     _total = 0;
   String? _statusFilter;
 
+  String? _orgId;
+
   @override
   void initState() {
     super.initState();
+    _loadOrgAndData();
+  }
+
+  Future<void> _loadOrgAndData() async {
+    final prefs = await SharedPreferences.getInstance();
+    _orgId = prefs.getString('org_id');
     _load();
   }
 
@@ -51,6 +60,7 @@ class _DeveloperTransactionsPageState
     }
     try {
       final result = await _service.getTransactions(
+        organizationId: _orgId,
         page:   reset ? 1 : _page,
         limit:  20,
         status: _statusFilter,

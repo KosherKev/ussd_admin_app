@@ -22,7 +22,8 @@ class OrgService {
     final token = prefs.getString('token');
     final dio   = buildDio(token: token);
     final res   = await dio.get('/orgs/$id');
-    final org   = res.data['data'] ?? res.data['org'] ?? res.data;
+    // API returns: {success, item: {...}}
+    final org = res.data['item'] ?? res.data['data'] ?? res.data['org'] ?? res.data;
     return Organization.fromJson(org as Map<String, dynamic>);
   }
 

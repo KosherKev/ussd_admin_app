@@ -126,17 +126,39 @@ class _LoginPageState extends State<LoginPage>
       backgroundColor: c.background,
       body: Stack(
         children: [
-          // Single top-right geometric accent — 120×120, amber @4% opacity,
-          // hard corner (r=0), partially off-screen right per spec.
+          // Ambient glow — amber bottom-right (mockup Screen 6)
           Positioned(
-            top: -20,
-            right: -20,
+            bottom: -60,
+            right: -60,
             child: Container(
-              width: 120,
-              height: 120,
+              width: 280,
+              height: 280,
               decoration: BoxDecoration(
-                color: c.primaryAmber.withValues(alpha: 0.04),
-                borderRadius: BorderRadius.zero,
+                gradient: RadialGradient(
+                  colors: [
+                    c.primaryAmber.withValues(alpha: 0.07),
+                    Colors.transparent,
+                  ],
+                ),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          // Ambient glow — blue top-left (mockup Screen 6)
+          Positioned(
+            top: -40,
+            left: -40,
+            child: Container(
+              width: 200,
+              height: 200,
+              decoration: const BoxDecoration(
+                gradient: RadialGradient(
+                  colors: [
+                    Color(0x0F3A7FBB),
+                    Colors.transparent,
+                  ],
+                ),
+                shape: BoxShape.circle,
               ),
             ),
           ),
@@ -289,7 +311,7 @@ class _LoginPageState extends State<LoginPage>
                                               ),
                                             )
                                           : Text(
-                                              'Sign In',
+                                              'Sign In →',
                                               style: text.labelLarge?.copyWith(
                                                 color: Colors.black,
                                                 fontWeight: FontWeight.w700,
@@ -326,8 +348,11 @@ class _LoginPageState extends State<LoginPage>
 
                           // Footer
                           Text(
-                            'PayHub © 2025',
-                            style: text.bodySmall?.copyWith(color: c.textTertiary),
+                            'PayHub © 2025 — Secure Payment Platform',
+                            style: text.bodySmall?.copyWith(
+                              color: c.textTertiary,
+                              letterSpacing: 0.04,
+                            ),
                             textAlign: TextAlign.center,
                           ),
                         ],
