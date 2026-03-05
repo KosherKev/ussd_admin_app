@@ -1,31 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../app/theme/app_theme.dart';
 import '../../shared/http/client.dart';
 import '../../shared/utils/helpers.dart';
-import '../../app/router/routes.dart'; // Added this import
+import '../../app/router/routes.dart';
 import '../../shared/services/org_service.dart';
-import '../../widgets/gradient_header.dart';
-import '../../widgets/glass_card.dart';
+import '../../widgets/app_card.dart';
 import '../../main.dart';
 import '../home/home_shell.dart';
 
+// ---------------------------------------------------------------------------
+// ProfilePage (Settings) — Phase 14
+//
+// Mockup: Screen 5 — "Settings"
+// Layout:
+//   • page-strip: eyebrow "ACCOUNT" / title "Settings"
+//   • Avatar block: initials circle (amber bg) | name bold | ROLE: mono
+//   • "ACCOUNT DETAILS" panel: email + org info-rows
+//   • "SUBSCRIPTION" card: star icon + plan | expires detail | chevron
+//   • "PREFERENCES" panel: Dark Mode toggle | SMS Receipts toggle | Dev Mode toggle
+//   • Full-width danger "Sign Out" button
+// ---------------------------------------------------------------------------
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
   @override
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  bool _loading = true;
+  bool    _loading      = true;
   String? _error;
   String? _email;
   String? _role;
   String? _orgName;
   String? _orgId;
-  bool _sendReceiptSms = false;
-  bool _savingOrg = false;
-  bool _devMode = false;
+  bool    _sendReceiptSms = false;
+  bool    _devMode        = false;
+  bool    _savingOrg      = false;
 
   final _phoneController = TextEditingController();
 
@@ -48,11 +61,13 @@ class _ProfilePageState extends State<ProfilePage> {
       final token = prefs.getString('token');
       final dio   = buildDio(token: token);
       final res   = await dio.get('/auth/me');
-      final user  = res.data['user'] as Map<String, dynamic>? ?? res.data as Map<String, dynamic>?;
+      final user  = res.data['user'] as Map<String, dynamic>?
+          ?? res.data as Map<String, dynamic>?;
 
-      final email  = user?['email']?.toString();
-      final role   = user?['role']?.toString() ?? 'org_admin';
-      final orgId  = user?['organizationId']?.toString() ?? prefs.getString('org_id');
+      final email = user?['email']?.toString();
+      final role  = user?['role']?.toString() ?? 'org_admin';
+      final orgId = user?['organizationId']?.toString()
+          ?? prefs.getString('org_id');
 
       String? orgName;
       String? orgPhone;
@@ -69,7 +84,6 @@ class _ProfilePageState extends State<ProfilePage> {
         }
       }
 
-      // Cache email for DeveloperSettingsPage
       await prefs.setString('email', email ?? '');
 
       if (mounted) {
@@ -79,13 +93,18 @@ class _ProfilePageState extends State<ProfilePage> {
           _orgName         = orgName;
           _orgId           = orgId;
           _sendReceiptSms  = smsEnabled;
+          _devMode         = prefs.getBool('dev_mode') ?? false;
           _phoneController.text = orgPhone ?? '';
-          _devMode         = prefs.getBool('dev_mode') ?? false; // Load dev_mode from prefs
           _loading         = false;
         });
       }
     } catch (e) {
-      if (mounted) setState(() { _error = ErrorHandlers.getErrorMessage(e); _loading = false; });
+      if (mounted) {
+        setState(() {
+          _error = ErrorHandlers.getErrorMessage(e);
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -110,6 +129,27 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  /// First letter of the display name / email.
+  String get _initials {
+    if (_email != null && _email!.isNotEmpty) {
+      return _email![0].toUpperCase();
+    }
+    return '?';
+  }
+
+  String get _displayName {
+    if (_email != null && _email!.isNotEmpty) {
+      final parts = _email!.split('@');
+      return parts.first
+          .replaceAll(RegExp(r'[._-]'), ' ')
+          .split(' ')
+          .map((w) => w.isEmpty ? '' : '${w[0].toUpperCase()}${w.substring(1)}')
+          .join(' ')
+          .trim();
+    }
+    return 'User';
+  }
+
   @override
   Widget build(BuildContext context) {
     final c        = context.appColors;
@@ -118,201 +158,481 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return Scaffold(
       backgroundColor: c.background,
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, 0),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          GradientHeader(
-            title: 'Settings',
-            trailing: _loading
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)))
-                : IconButton(icon: const Icon(Icons.refresh, color: Colors.white), onPressed: _load),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Expanded(
-            child: _loading
-                ? Center(child: CircularProgressIndicator(color: c.primaryAmber))
-                : _error != null
-                    ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        Icon(Icons.error_outline, size: 56, color: c.error),
-                        const SizedBox(height: AppSpacing.md),
-                        Text(_error!, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: c.textSecondary), textAlign: TextAlign.center),
-                        const SizedBox(height: AppSpacing.lg),
-                        ElevatedButton(onPressed: _load, child: const Text('Retry')),
-                      ]))
-                    : ListView(children: [
-                        // Account card
-                        Text('Account', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: c.textSecondary)),
-                        const SizedBox(height: AppSpacing.sm),
-                        GlassCard(child: Column(children: [
-                          _infoRow(Icons.email_outlined, 'Email', _email ?? '--', c),
-                          Divider(color: c.borderSubtle, thickness: 1, height: 1),
-                          _infoRow(Icons.badge_outlined, 'Role', StatusHelpers.formatStatus(_role ?? 'org_admin'), c),
-                          if (_orgName != null) ...[
-                            Divider(color: c.borderSubtle, thickness: 1, height: 1),
-                            _infoRow(Icons.business_outlined, 'Organisation', _orgName!, c),
-                          ],
-                        ])),
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
 
-                        // Subscription Status Link (Added visual aspect)
-                        const SizedBox(height: AppSpacing.lg),
-                        Text('Subscription', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: c.textSecondary)),
-                        const SizedBox(height: AppSpacing.sm),
-                        GlassCard(
-                          child: InkWell(
-                            onTap: () {
-                              final orgId = _orgId;
-                              if (orgId == null || orgId.isEmpty) {
-                                DialogHelpers.showError(
-                                  context,
-                                  'No organisation linked to this account.',
-                                );
-                                return;
-                              }
-                              Navigator.pushNamed(
-                                context,
-                                Routes.subscriptionStatus,
-                                arguments: orgId,
-                              );
-                            },
-                            borderRadius: BorderRadius.circular(AppRadius.lg),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.xs),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.workspace_premium_outlined, color: c.primaryAmber, size: 24),
-                                  const SizedBox(width: AppSpacing.md),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text('Subscription Status', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: c.textPrimary, fontWeight: FontWeight.w600)),
-                                        Text('View your current plan and limits', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: c.textSecondary)),
-                                      ],
+            // ── Page strip header ──────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.sm),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'ACCOUNT',
+                          style: AppTypography.labelMono(c.primaryAmber)
+                              .copyWith(letterSpacing: 0.12),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Settings',
+                          style: GoogleFonts.instrumentSerif(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w400,
+                            fontStyle: FontStyle.italic,
+                            color: c.textPrimary,
+                            height: 1.1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Refresh
+                  GestureDetector(
+                    onTap: _loading ? null : _load,
+                    child: Container(
+                      width: 38, height: 38,
+                      decoration: BoxDecoration(
+                        color: c.bgSurface,
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        border: Border.all(color: c.borderMid, width: 1),
+                      ),
+                      child: _loading
+                          ? Padding(
+                              padding: const EdgeInsets.all(10),
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 1.5, color: c.primaryAmber))
+                          : Icon(Icons.refresh_rounded,
+                              size: 17, color: c.textSecondary),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Divider(height: 1, color: c.borderSubtle),
+
+            // ── Body ────────────────────────────────────────────────────
+            Expanded(
+              child: _loading
+                  ? Center(child: CircularProgressIndicator(color: c.primaryAmber))
+                  : _error != null
+                      ? Center(child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.error_outline, size: 56, color: c.error),
+                            const SizedBox(height: AppSpacing.md),
+                            Text(_error!,
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: c.textSecondary),
+                              textAlign: TextAlign.center),
+                            const SizedBox(height: AppSpacing.lg),
+                            ElevatedButton(
+                                onPressed: _load, child: const Text('Retry')),
+                          ]))
+                      : ListView(
+                          padding: const EdgeInsets.fromLTRB(
+                              AppSpacing.md, AppSpacing.md,
+                              AppSpacing.md, AppSpacing.xxl),
+                          children: [
+
+                            // ── Avatar / identity block ──────────────────
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                // Initials circle
+                                Container(
+                                  width: 52, height: 52,
+                                  decoration: BoxDecoration(
+                                    color: c.amberBg,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                        color: c.amberBorder, width: 1),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      _initials,
+                                      style: GoogleFonts.instrumentSerif(
+                                        fontSize: 24,
+                                        color: c.primaryAmber,
+                                        height: 1,
+                                      ),
                                     ),
                                   ),
-                                  Icon(Icons.chevron_right_rounded, color: c.textTertiary),
-                                ],
-                              ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _displayName,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleSmall
+                                            ?.copyWith(
+                                              color: c.textPrimary,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'ROLE: ${(_role ?? 'org_admin').toUpperCase()}',
+                                        style: AppTypography.labelMono(
+                                                c.textTertiary)
+                                            .copyWith(
+                                                fontSize: 10,
+                                                letterSpacing: 0.04),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Ghost "Edit" button (navigates to edit if ever added)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.sm, vertical: 7),
+                                  decoration: BoxDecoration(
+                                    color: c.bgSurface,
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.sm),
+                                    border: Border.all(
+                                        color: c.borderMid, width: 1),
+                                  ),
+                                  child: Text('Edit',
+                                    style: AppTypography.labelMono(
+                                            c.textSecondary)
+                                        .copyWith(fontSize: 11)),
+                                ),
+                              ],
                             ),
-                          ),
-                        ),
 
-                        // Organisation settings (only for org_admin with an org)
-                        if (_orgId != null && _orgId!.isNotEmpty && _role == 'org_admin') ...[
-                          const SizedBox(height: AppSpacing.lg),
-                          Text('Organisation Settings', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: c.textSecondary)),
-                          const SizedBox(height: AppSpacing.sm),
-                          GlassCard(child: Column(children: [
-                            TextFormField(
-                              controller: _phoneController,
-                              decoration: const InputDecoration(
-                                labelText: 'Contact Phone',
-                                prefixIcon: Icon(Icons.phone_outlined),
-                              ),
-                              keyboardType: TextInputType.phone,
+                            const SizedBox(height: AppSpacing.lg),
+                            Divider(height: 1, color: c.borderSubtle),
+                            const SizedBox(height: AppSpacing.md),
+
+                            // ── Account Details ──────────────────────────
+                            _SectionLabel('ACCOUNT DETAILS', c),
+                            const SizedBox(height: AppSpacing.xs),
+                            AppCard(
+                              child: Column(children: [
+                                _InfoRow(
+                                  icon: '✉',
+                                  label: 'Email',
+                                  value: _email ?? '—',
+                                  c: c,
+                                  context: context,
+                                ),
+                                if (_orgName != null) ...[
+                                  Divider(height: 1, color: c.borderSubtle),
+                                  _InfoRow(
+                                    icon: '🏢',
+                                    label: 'Organisation',
+                                    value: _orgName!,
+                                    c: c,
+                                    context: context,
+                                  ),
+                                ],
+                              ]),
                             ),
-                            const SizedBox(height: AppSpacing.sm),
-                            Divider(color: c.borderSubtle, thickness: 1, height: 1),
-                            Row(children: [
-                              Icon(Icons.sms_outlined, size: 20, color: c.textSecondary),
-                              const SizedBox(width: AppSpacing.sm),
-                              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                Text('SMS Receipts', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: c.textPrimary)),
-                                Text('Send receipt SMS to customers after payment', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: c.textSecondary)),
-                              ])),
-                              Switch(
-                                value: _sendReceiptSms,
-                                onChanged: (v) => setState(() => _sendReceiptSms = v),
+
+                            // ── Subscription ─────────────────────────────
+                            const SizedBox(height: AppSpacing.md),
+                            _SectionLabel('SUBSCRIPTION', c),
+                            const SizedBox(height: AppSpacing.xs),
+                            AppCard(
+                              onTap: () {
+                                final orgId = _orgId;
+                                if (orgId == null || orgId.isEmpty) {
+                                  DialogHelpers.showError(context,
+                                      'No organisation linked to this account.');
+                                  return;
+                                }
+                                Navigator.pushNamed(
+                                    context, Routes.subscriptionStatus,
+                                    arguments: orgId);
+                              },
+                              child: Row(children: [
+                                Container(
+                                  width: 36, height: 36,
+                                  decoration: BoxDecoration(
+                                    color: c.amberBg,
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.sm),
+                                    border: Border.all(
+                                        color: c.amberBorder, width: 1),
+                                  ),
+                                  child: Center(
+                                    child: Text('★',
+                                      style: TextStyle(
+                                          fontSize: 16,
+                                          color: c.primaryAmber)),
+                                  ),
+                                ),
+                                const SizedBox(width: AppSpacing.sm),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Subscription Status',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(
+                                              color: c.textPrimary,
+                                              fontWeight: FontWeight.w600,
+                                            )),
+                                      Text('View plan and limits',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                                color: c.textSecondary)),
+                                    ],
+                                  ),
+                                ),
+                                Icon(Icons.chevron_right_rounded,
+                                    size: 18, color: c.textTertiary),
+                              ]),
+                            ),
+
+                            // ── Organisation settings (org_admin only) ───
+                            if (_orgId != null &&
+                                _orgId!.isNotEmpty &&
+                                _role == 'org_admin') ...[
+                              const SizedBox(height: AppSpacing.md),
+                              _SectionLabel('ORGANISATION', c),
+                              const SizedBox(height: AppSpacing.xs),
+                              AppCard(
+                                child: Column(children: [
+                                  TextFormField(
+                                    controller: _phoneController,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Contact Phone',
+                                      prefixIcon:
+                                          Icon(Icons.phone_outlined),
+                                    ),
+                                    keyboardType: TextInputType.phone,
+                                  ),
+                                  const SizedBox(height: AppSpacing.sm),
+                                  Divider(
+                                      height: 1, color: c.borderSubtle),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  Row(children: [
+                                    Icon(Icons.sms_outlined,
+                                        size: 18, color: c.textSecondary),
+                                    const SizedBox(width: AppSpacing.sm),
+                                    Expanded(child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text('SMS Receipts',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                  color: c.textPrimary)),
+                                        Text(
+                                          'Send receipt SMS to customers',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(
+                                                  color: c.textSecondary)),
+                                      ],
+                                    )),
+                                    Switch(
+                                      value: _sendReceiptSms,
+                                      onChanged: (v) =>
+                                          setState(() => _sendReceiptSms = v),
+                                    ),
+                                  ]),
+                                  const SizedBox(height: AppSpacing.sm),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton(
+                                      onPressed: _savingOrg
+                                          ? null
+                                          : _saveOrgSettings,
+                                      child: _savingOrg
+                                          ? const SizedBox(
+                                              width: 20, height: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                valueColor:
+                                                    AlwaysStoppedAnimation(
+                                                        Colors.black),
+                                              ))
+                                          : const Text(
+                                              'Save Organisation Settings'),
+                                    ),
+                                  ),
+                                ]),
                               ),
-                            ]),
-                            const SizedBox(height: AppSpacing.sm),
+                            ],
+
+                            // ── Preferences panel ─────────────────────────
+                            const SizedBox(height: AppSpacing.md),
+                            _SectionLabel('PREFERENCES', c),
+                            const SizedBox(height: AppSpacing.xs),
+                            AppCard(
+                              child: Column(children: [
+                                // Dark Mode
+                                Row(children: [
+                                  Text(
+                                    isDark ? '🌙' : '☀️',
+                                    style: const TextStyle(fontSize: 16),
+                                  ),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Expanded(child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Dark Mode',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(color: c.textPrimary)),
+                                      Text(isDark ? 'Enabled' : 'Disabled',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                                color: c.textSecondary)),
+                                    ],
+                                  )),
+                                  Switch(
+                                    value: isDark,
+                                    onChanged: (v) =>
+                                        appState?.setThemeMode(
+                                            v ? ThemeMode.dark : ThemeMode.light),
+                                  ),
+                                ]),
+
+                                Divider(height: 1, color: c.borderSubtle),
+
+                                // Developer Mode
+                                Row(children: [
+                                  const Text('⚙', style: TextStyle(fontSize: 16)),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Expanded(child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Developer Mode',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(color: c.textPrimary)),
+                                      Text(_devMode ? 'On' : 'Off',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                                color: c.textSecondary)),
+                                    ],
+                                  )),
+                                  Switch(
+                                    value: _devMode,
+                                    onChanged: (v) async {
+                                      final rootContext = context;
+                                      final prefs =
+                                          await SharedPreferences.getInstance();
+                                      await prefs.setBool('dev_mode', v);
+                                      if (rootContext.mounted) {
+                                        Navigator.pushNamedAndRemoveUntil(
+                                            rootContext, Routes.home,
+                                            (r) => false);
+                                      }
+                                    },
+                                  ),
+                                ]),
+                              ]),
+                            ),
+
+                            const SizedBox(height: AppSpacing.xl),
+
+                            // ── Sign Out ──────────────────────────────────
                             SizedBox(
                               width: double.infinity,
+                              height: 52,
                               child: ElevatedButton(
-                                onPressed: _savingOrg ? null : _saveOrgSettings,
-                                child: _savingOrg
-                                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)))
-                                    : const Text('Save Organisation Settings'),
+                                onPressed: () => showSignOutDialog(context),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: c.errorBg,
+                                  foregroundColor: c.error,
+                                  side: BorderSide(color: c.errorBorder),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.md),
+                                  ),
+                                ),
+                                child: const Text('Sign Out'),
                               ),
                             ),
-                          ])),
-                        ],
-
-                        const SizedBox(height: AppSpacing.lg),
-
-                        // Appearance
-                        Text('Appearance', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: c.textSecondary)),
-                        const SizedBox(height: AppSpacing.sm),
-                        GlassCard(child: Row(children: [
-                          Icon(isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded, size: 20, color: c.textSecondary),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(child: Text('Dark Mode', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: c.textPrimary))),
-                          Switch(
-                            value: isDark,
-                            onChanged: (v) => appState?.setThemeMode(v ? ThemeMode.dark : ThemeMode.light),
-                          ),
-                        ])),
-
-                        const SizedBox(height: AppSpacing.lg),
-
-                        // Debug role toggle (to easily switch to developer view)
-                        Text('Developer Options', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: c.textSecondary)),
-                        const SizedBox(height: AppSpacing.sm),
-                        GlassCard(child: Row(children: [
-                          Icon(Icons.developer_mode_outlined, size: 20, color: c.textSecondary),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Developer Mode', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: c.textPrimary)),
-                              Text('Toggle role to test developer portal', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: c.textSecondary)),
-                            ],
-                          )),
-                          Switch(
-                            value: _devMode,
-                            onChanged: (v) async {
-                              final rootContext = context;
-                              final prefs = await SharedPreferences.getInstance();
-                              await prefs.setBool('dev_mode', v);
-                              if (rootContext.mounted) {
-                                Navigator.pushNamedAndRemoveUntil(rootContext, Routes.home, (r) => false);
-                              }
-                            },
-                          ),
-                        ])),
-
-                        const SizedBox(height: AppSpacing.lg),
-
-                        // Sign out
-                        OutlinedButton.icon(
-                          onPressed: () => showSignOutDialog(context),
-                          icon: const Icon(Icons.logout_rounded),
-                          label: const Text('Sign Out'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: c.error,
-                            side: BorderSide(color: c.error),
-                            minimumSize: const Size(double.infinity, 52),
-                          ),
+                          ],
                         ),
-
-                        const SizedBox(height: AppSpacing.xxl),
-                      ]),
-          ),
-        ]),
+            ),
+          ],
+        ),
       ),
     );
   }
+}
 
-  Widget _infoRow(IconData icon, String label, String value, AppColors c) =>
-    Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      child: Row(children: [
-        Icon(icon, size: 18, color: c.textSecondary),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: c.textTertiary)),
-          Text(value, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: c.textPrimary)),
-        ])),
-      ]),
-    );
+// ── Private helpers ───────────────────────────────────────────────────────────
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.text, this.c);
+  final String    text;
+  final AppColors c;
+
+  @override
+  Widget build(BuildContext context) => Text(
+    text,
+    style: AppTypography.labelMono(c.textTertiary)
+        .copyWith(fontSize: 10, letterSpacing: 0.12),
+  );
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.c,
+    required this.context,
+  });
+  final String     icon;
+  final String     label;
+  final String     value;
+  final AppColors  c;
+  final BuildContext context;
+
+  @override
+  Widget build(BuildContext ctx) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+    child: Row(children: [
+      Text(icon, style: const TextStyle(fontSize: 16)),
+      const SizedBox(width: AppSpacing.sm),
+      Expanded(child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+            style: AppTypography.labelMono(c.textTertiary)
+                .copyWith(fontSize: 10)),
+          const SizedBox(height: 2),
+          Text(value,
+            style: Theme.of(context).textTheme.bodyMedium
+                ?.copyWith(color: c.textPrimary)),
+        ],
+      )),
+    ]),
+  );
 }
