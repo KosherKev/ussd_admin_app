@@ -197,3 +197,82 @@ class DailyStat {
         volume:    (json['volume']   as num).toDouble(),
       );
 }
+
+// ---------------------------------------------------------------------------
+// OrgApiKey — a single key from GET /api/v1/keys
+// ---------------------------------------------------------------------------
+class OrgApiKey {
+  final String id;
+  final String projectName;
+  final String environment;
+  final String keyPrefix;
+  final bool   isActive;
+  final List<String> scopes;
+  final String? webhookUrl;
+  final String? lastUsedAt;
+  final String  createdAt;
+
+  const OrgApiKey({
+    required this.id,
+    required this.projectName,
+    required this.environment,
+    required this.keyPrefix,
+    required this.isActive,
+    required this.scopes,
+    this.webhookUrl,
+    this.lastUsedAt,
+    required this.createdAt,
+  });
+
+  factory OrgApiKey.fromJson(Map<String, dynamic> json) => OrgApiKey(
+        id:          (json['id'] ?? json['_id'] ?? '').toString(),
+        projectName: (json['projectName'] ?? '').toString(),
+        environment: (json['environment'] ?? '').toString(),
+        keyPrefix:   (json['keyPrefix'] ?? '').toString(),
+        isActive:    json['isActive'] == true,
+        scopes: (json['scopes'] as List<dynamic>? ?? [])
+            .map((s) => s.toString())
+            .toList(),
+        webhookUrl:  json['webhookUrl'] as String?,
+        lastUsedAt:  json['lastUsedAt'] as String?,
+        createdAt:   (json['createdAt'] ?? '').toString(),
+      );
+}
+
+// ---------------------------------------------------------------------------
+// NewApiKey — returned ONCE on POST /api/v1/keys (contains the secret)
+// ---------------------------------------------------------------------------
+class NewApiKey {
+  final String id;
+  final String projectName;
+  final String environment;
+  final String keyPrefix;
+  final String secretKey;
+  final String? webhookUrl;
+  final List<String> scopes;
+
+  const NewApiKey({
+    required this.id,
+    required this.projectName,
+    required this.environment,
+    required this.keyPrefix,
+    required this.secretKey,
+    this.webhookUrl,
+    required this.scopes,
+  });
+
+  factory NewApiKey.fromJson(Map<String, dynamic> json) {
+    final k = (json['key'] ?? json['data'] ?? json) as Map<String, dynamic>;
+    return NewApiKey(
+      id:          (k['id'] ?? k['_id'] ?? '').toString(),
+      projectName: (k['projectName'] ?? '').toString(),
+      environment: (k['environment'] ?? '').toString(),
+      keyPrefix:   (k['keyPrefix'] ?? '').toString(),
+      secretKey:   (k['secretKey'] ?? json['secretKey'] ?? '').toString(),
+      webhookUrl:  k['webhookUrl'] as String?,
+      scopes: (k['scopes'] as List<dynamic>? ?? [])
+          .map((s) => s.toString())
+          .toList(),
+    );
+  }
+}

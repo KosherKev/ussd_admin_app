@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme/app_theme.dart';
 import '../../shared/utils/helpers.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../shared/models/webhook_delivery.dart';
 import '../../shared/services/developer_service.dart';
 import '../../app/router/routes.dart';
@@ -29,6 +30,7 @@ class WebhooksListPage extends StatefulWidget {
 class _WebhooksListPageState extends State<WebhooksListPage> {
   final _service = DeveloperService();
 
+  String? _orgId;
   List<WebhookDelivery> _items = [];
   bool    _loading     = true;
   bool    _loadingMore = false;
@@ -40,6 +42,12 @@ class _WebhooksListPageState extends State<WebhooksListPage> {
   @override
   void initState() {
     super.initState();
+    _loadOrgId();
+  }
+
+  Future<void> _loadOrgId() async {
+    final prefs = await SharedPreferences.getInstance();
+    _orgId = prefs.getString('org_id');
     _load();
   }
 
@@ -50,7 +58,12 @@ class _WebhooksListPageState extends State<WebhooksListPage> {
       setState(() => _loadingMore = true);
     }
     try {
+      if (_orgId == null) {
+        if (mounted) setState(() { _loading = _loadingMore = false; });
+        return;
+      }
       final result = await _service.getWebhookDeliveries(
+        _orgId!,
         status: _statusFilter,
         page:   reset ? 1 : _page,
         limit:  20,

@@ -24,6 +24,7 @@ class _DeveloperDashboardPageState extends State<DeveloperDashboardPage> {
   bool      _loading    = true;
   String?   _error;
   int       _periodDays = 30;
+  String?   _orgId;
   String?   _keyId;
 
   static const _periodOptions = ['7d', '30d', '90d'];
@@ -33,17 +34,18 @@ class _DeveloperDashboardPageState extends State<DeveloperDashboardPage> {
   @override
   void initState() {
     super.initState();
-    _loadKeyId();
+    _loadOrgId();
   }
 
-  Future<void> _loadKeyId() async {
+  Future<void> _loadOrgId() async {
     final prefs = await SharedPreferences.getInstance();
+    _orgId = prefs.getString('org_id');
     _keyId = prefs.getString('key_id');
     _load();
   }
 
   Future<void> _load() async {
-    if (_keyId == null) {
+    if (_orgId == null) {
       setState(() => _loading = false);
       return;
     }
@@ -51,7 +53,7 @@ class _DeveloperDashboardPageState extends State<DeveloperDashboardPage> {
     try {
       final from = DateTime.now().subtract(Duration(days: _periodDays)).toIso8601String();
       final to   = DateTime.now().toIso8601String();
-      final usage = await _service.getKeyUsage(_keyId!, from: from, to: to);
+      final usage = await _service.getOrgUsage(_orgId!, from: from, to: to);
       if (mounted) setState(() { _usage = usage; _loading = false; });
     } catch (e) {
       if (mounted) setState(() { _error = ErrorHandlers.getErrorMessage(e); _loading = false; });
