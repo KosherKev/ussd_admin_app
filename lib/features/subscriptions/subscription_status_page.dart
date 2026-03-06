@@ -5,6 +5,8 @@ import '../../shared/utils/helpers.dart';
 import '../../shared/models/subscription.dart';
 import '../../shared/services/subscription_service.dart';
 import '../../widgets/app_card.dart';
+import '../../widgets/header_icon_button.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 // ---------------------------------------------------------------------------
 // SubscriptionStatusPage — Refined Financial Brutalism design
@@ -78,20 +80,11 @@ class _SubscriptionStatusPageState extends State<SubscriptionStatusPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Back button
-                  GestureDetector(
+                  HeaderIconButton(
+                    icon: Icons.arrow_back_rounded,
                     onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 38, height: 38,
-                      margin: const EdgeInsets.only(right: AppSpacing.sm, top: 2),
-                      decoration: BoxDecoration(
-                        color: c.bgSurface,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                        border: Border.all(color: c.borderMid, width: 1),
-                      ),
-                      child: Icon(Icons.arrow_back_rounded,
-                          size: 17, color: c.textSecondary),
-                    ),
                   ),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,23 +108,10 @@ class _SubscriptionStatusPageState extends State<SubscriptionStatusPage> {
                     ),
                   ),
                   // Refresh button
-                  GestureDetector(
-                    onTap: _loading ? null : _load,
-                    child: Container(
-                      width: 38, height: 38,
-                      decoration: BoxDecoration(
-                        color: c.bgSurface,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                        border: Border.all(color: c.borderMid, width: 1),
-                      ),
-                      child: _loading
-                          ? Padding(
-                              padding: const EdgeInsets.all(11),
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 1.5, color: c.primaryAmber))
-                          : Icon(Icons.refresh_rounded,
-                              size: 17, color: c.textSecondary),
-                    ),
+                  HeaderIconButton(
+                    icon: Icons.refresh_rounded,
+                    onTap: _load,
+                    loading: _loading,
                   ),
                 ],
               ),
@@ -269,14 +249,14 @@ class _SubscriptionStatusPageState extends State<SubscriptionStatusPage> {
               ),
             ],
           ),
-        ),
+        ).animate().fade(duration: 400.ms).slideY(begin: 0.1, end: 0, duration: 400.ms),
 
         const SizedBox(height: AppSpacing.md),
 
         // ── Section label ────────────────────────────────────────────────
         Text('SUBSCRIPTION DETAILS',
           style: AppTypography.labelMono(c.textTertiary)
-              .copyWith(fontSize: 10, letterSpacing: 0.12)),
+              .copyWith(fontSize: 10, letterSpacing: 0.12)).animate().fade(delay: 100.ms, duration: 400.ms),
         const SizedBox(height: AppSpacing.xs),
 
         // ── Details card ─────────────────────────────────────────────────
@@ -299,14 +279,14 @@ class _SubscriptionStatusPageState extends State<SubscriptionStatusPage> {
                   DateFormatters.formatDate(sub.gracePeriodEndDate), c),
             ],
           ]),
-        ),
+        ).animate().fade(delay: 150.ms, duration: 400.ms).slideY(begin: 0.1, end: 0, duration: 400.ms),
 
         const SizedBox(height: AppSpacing.md),
 
-        // ── USSD section label ────────────────────────────────────────────
+        // ── Section label ────────────────────────────────────────────────
         Text('FEATURES',
           style: AppTypography.labelMono(c.textTertiary)
-              .copyWith(fontSize: 10, letterSpacing: 0.12)),
+              .copyWith(fontSize: 10, letterSpacing: 0.12)).animate().fade(delay: 250.ms, duration: 400.ms),
         const SizedBox(height: AppSpacing.xs),
 
         // ── USSD feature row ─────────────────────────────────────────────
@@ -368,12 +348,13 @@ class _SubscriptionStatusPageState extends State<SubscriptionStatusPage> {
               ),
             ),
           ]),
-        ),
+        ).animate().fade(delay: 300.ms, duration: 400.ms).slideY(begin: 0.1, end: 0, duration: 400.ms),
+        
         // ── Pay / Renew button ────────────────────────────────────────────
         const SizedBox(height: AppSpacing.lg),
         Text('ACTIONS',
           style: AppTypography.labelMono(c.textTertiary)
-              .copyWith(fontSize: 10, letterSpacing: 0.12)),
+              .copyWith(fontSize: 10, letterSpacing: 0.12)).animate().fade(delay: 400.ms, duration: 400.ms),
         const SizedBox(height: AppSpacing.xs),
         SizedBox(
           width: double.infinity,
@@ -392,7 +373,43 @@ class _SubscriptionStatusPageState extends State<SubscriptionStatusPage> {
                   borderRadius: BorderRadius.circular(AppRadius.sm)),
             ),
           ),
-        ),
+        ).animate().fade(delay: 450.ms, duration: 400.ms).slideY(begin: 0.1, end: 0, duration: 400.ms),
+
+        // ── PIN Prompt Help (only if not active) ──────────────────────────
+        if (!sub.isActive) ...[
+          const SizedBox(height: AppSpacing.lg),
+          AppCard(
+            variant: AppCardVariant.elevated,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.help_outline_rounded, size: 20, color: c.textSecondary),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('PIN prompt never appeared?',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: c.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        )),
+                      const SizedBox(height: 4),
+                      Text(
+                        'If you didn\'t receive a mobile money prompt, contact the super admin. '
+                        'They can force-verify the transaction or mark it as failed so you can retry.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: c.textSecondary,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ).animate().fade(delay: 500.ms, duration: 400.ms),
+        ],
       ],
     );
   }
@@ -488,7 +505,9 @@ class _PaySheetState extends State<_PaySheet> {
                     fontSize: 20, fontStyle: FontStyle.italic, color: c.textPrimary)),
                 content: Text(
                   'A payment prompt has been sent to ${_phoneCtrl.text.trim()}.\n\n'
-                  'Approve the debit on your mobile money phone to complete the renewal.',
+                  '1. Approve the debit on your mobile money phone.\n'
+                  '2. Your subscription will activate automatically once confirmed.\n\n'
+                  'If the PIN prompt never appears, please contact the Super Admin to force-verify the transaction.',
                   style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(color: c.textSecondary),
                   textAlign: TextAlign.center,
                 ),

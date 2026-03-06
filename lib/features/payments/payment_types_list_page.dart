@@ -7,6 +7,9 @@ import '../../shared/models/payment_type.dart';
 import '../../shared/services/payment_type_service.dart';
 import '../../widgets/filter_chips_row.dart';
 import '../../widgets/status_chip.dart';
+import '../../widgets/header_icon_button.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'dart:math' as math;
 
 // ---------------------------------------------------------------------------
 // PaymentTypesListPage — Phase 12
@@ -133,22 +136,11 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
                   ),
                 ),
                 // Refresh
-                if (_loading)
-                  SizedBox(
-                    width: 38, height: 38,
-                    child: Center(child: SizedBox(
-                      width: 16, height: 16,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 1.5, color: c.primaryAmber),
-                    )),
-                  )
-                else ...[
-                  _HeaderBtn(
-                      icon: Icons.refresh_rounded,
-                      onTap: _load,
-                      c: c),
-                  const SizedBox(width: AppSpacing.xs),
-                ],
+                HeaderIconButton(
+                    icon: Icons.refresh_rounded,
+                    onTap: _load,
+                    loading: _loading),
+                const SizedBox(width: AppSpacing.xs),
                 // Primary "+ Add" button
                 GestureDetector(
                   onTap: () => _navigateToEdit(null),
@@ -222,7 +214,7 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
                               separatorBuilder: (_, __) =>
                                   const SizedBox(height: AppSpacing.sm),
                               itemBuilder: (_, i) =>
-                                  _buildCard(_filtered[i], c),
+                                  _buildCard(_filtered[i], c).animate().fade(delay: (math.min(i, 15) * 50).ms, duration: 300.ms).slideY(begin: 0.05, end: 0, duration: 300.ms),
                             ),
                           ),
           ),
@@ -356,26 +348,7 @@ class _PaymentTypesListPageState extends State<PaymentTypesListPage> {
 
 // ── Private helpers ───────────────────────────────────────────────────────────
 
-class _HeaderBtn extends StatelessWidget {
-  const _HeaderBtn({required this.icon, required this.c, this.onTap});
-  final IconData  icon;
-  final AppColors c;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
-    child: Container(
-      width: 38, height: 38,
-      decoration: BoxDecoration(
-        color: c.bgSurface,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-        border: Border.all(color: c.borderMid, width: 1),
-      ),
-      child: Icon(icon, size: 17, color: c.textSecondary),
-    ),
-  );
-}
+// ── Private header button — replaced by HeaderIconButton ─────────────────────
 
 class _LimitCell extends StatelessWidget {
   const _LimitCell({required this.label, required this.value, required this.c});

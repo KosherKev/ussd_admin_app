@@ -82,16 +82,20 @@ Their JWT contains `role: "org_admin"` and `organizationId: "<their_org_id>"`. T
      status: "completed"
    }
    →  paginated list of completed payments
+   →  Subscription payments (PayHub platform fees) are never shown here —
+      they are internal billing records visible to super admin only
 
 2. Filter by payment type
    GET /api/reports/transactions
    Params: { organizationId: "...", status: "completed" }
-   →  filter further by paymentType field in results
+   →  filter further by paymentType field in results (all types except "subscription")
 
 3. Get a monthly summary
    GET /api/reports/orgs/:id/summary
    Params: { startDate: "2026-02-01", endDate: "2026-02-28" }
    →  { totalVolume: 71750, totalNetVolume: 69597.50, completedTransactions: 287 }
+   →  totalVolume and completedTransactions reflect your collected payments only —
+      subscription payments to PayHub are excluded from these figures
 
 4. Check subscription expiry
    GET /api/subscriptions/:id/status
@@ -106,15 +110,53 @@ Their JWT contains `role: "org_admin"` and `organizationId: "<their_org_id>"`. T
 
 ---
 
-## Flow 4 — Working with the Client API (for technical org admins)
+## Flow 4 — Managing API Keys & Developer Dashboard
 
-**Trigger:** Org admin is also managing the school's web portal and wants to integrate payments.
+**Trigger:** Org admin needs to integrate their web portal with PayHub, or wants to review transaction analytics.
 
 ```
-1. The super admin has already issued an API key (sk_live_...)
-   →  The org admin stores it as an environment variable in their portal
+1. Self-provision an API key (no longer requires super admin)
+   POST /api/v1/keys
+   Headers: { Authorization: "Bearer <JWT>" }
+   Body: {
+     projectName: "XYZ School Portal",
+     environment: "live",
+     scopes: ["payments:write", "payments:read", "ussd:write"],
+     webhookUrl: "https://xyzschool.edu.gh/webhooks/payhub",
+     webhookSecret: "<generated>"
+   }
+   →  secretKey returned ONCE — store it immediately as an environment variable
+   →  organizationId is automatically set to your own org (cannot be overridden)
+   →  Elevated scopes (keys:manage, payments:split_override) require super admin — request if needed
 
-2. They use the key to initiate mobile money payments from their portal
+2. List your org's keys
+   GET /api/v1/keys
+   →  Only keys for your org are returned
+
+3. Update a key's webhook URL
+   PATCH /api/v1/keys/:id
+   Body: { webhookUrl: "https://new.xyzschool.edu.gh/webhooks/payhub" }
+
+4. Revoke a key (soft delete — preserves audit trail)
+   DELETE /api/v1/keys/:id
+
+5. View usage analytics (Developer Dashboard)
+   GET /api/orgs/:id/usage?from=<iso>&to=<iso>
+   Headers: { Authorization: "Bearer <JWT>" }
+   →  Aggregated transaction counts, volumes, success rates, daily breakdown
+   →  Includes summary of the org's most recently active API key
+   →  Also available via GET /api/v1/keys/:keyId/usage for a single key
+
+6. View webhook delivery history
+   GET /api/orgs/:id/webhook-deliveries?page=1&limit=20
+   →  All delivery attempts for all of your org's API keys
+   →  Filter: ?transactionRef=TXN-... or ?status=permanently_failed
+```
+
+**Using the key to integrate your portal:**
+
+```
+Initiate a mobile money payment:
    POST /api/v1/payments/initiate
    Headers: { Authorization: "Bearer sk_live_..." }
    Body: { amount: 250, customer: { phone: "0244111111", network: "MTN" }, paymentType: "school_fees" }
@@ -126,22 +168,21 @@ Their JWT contains `role: "org_admin"` and `organizationId: "<their_org_id>"`. T
    →  On success: { status: "completed" }
    →  On failure: { error: "OTP_REJECTED" } — show failure, let customer re-initiate
 
-3. Their portal generates a USSD code for walk-in customers with no smartphone
+Generate a USSD code for walk-in customers:
    POST /api/v1/payments/ussd-code
    Body: { amount: 75, paymentType: "pta_dues" }
    →  { code: "3924", dialString: "*920*123#", expiresAt: "..." }
-   →  Staff shows code on a receipt — customer dials in and confirms
 
-4. Their portal shows payment status
+Check payment status:
    GET /api/v1/payments/TXN-.../status
 
-5. Their server receives webhook notifications
+Receive webhook notifications:
    →  PayHub POSTs to webhookUrl when payment.completed / payment.failed fires
    →  Portal marks student's account as paid
 
-6. If a webhook was missed
-   GET /api/v1/webhooks/deliveries?transactionRef=TXN-...
-   →  View all delivery attempts and response codes
+If a webhook was missed:
+   GET /api/orgs/:id/webhook-deliveries?transactionRef=TXN-...
+   →  View all delivery attempts and response codes (Bearer JWT auth)
 ```
 
 **Note on split codes:** The org admin never needs to think about split codes or subaccounts. If the super admin has configured a split code for this organization, PayHub applies it automatically to every transaction. No change is needed in the portal's integration code.
@@ -161,10 +202,11 @@ Their JWT contains `role: "org_admin"` and `organizationId: "<their_org_id>"`. T
    POST /api/subscriptions/:id/pay
    Headers: { Authorization: "Bearer <JWT>" }
    Body: {
-     phone:        "0244111111",          ← payer's mobile money number
+     phone:        "0244111111",          ← local (0XXXXXXXXX) or international (233XXXXXXXXX) format
      network:      "MTN",                 ← MTN | VODAFONE | AIRTELTIGO
      billingModel: "monthly"              ← monthly | annual_prepaid | annual_monthly
    }
+   →  Phone number is normalized to 233XXXXXXXXX automatically before being sent to Paystack
    →  201: {
         transactionRef: "TXN-XYZSCH-...",
         amount:         100,
@@ -181,9 +223,12 @@ Their JWT contains `role: "org_admin"` and `organizationId: "<their_org_id>"`. T
       }
 
 3a. If requiresOtp is false (push prompt sent to phone)
-   →  Customer approves the debit on their phone
-   →  PayHub webhook confirms payment → subscription is activated automatically by the super admin
-       via POST /api/subscriptions/:id/activate-after-payment
+   →  Approve the debit on your phone when the MoMo prompt appears
+   →  PayHub's Paystack webhook fires automatically → subscription is activated without any
+      further action from you or the super admin
+   →  If the PIN prompt never appeared on your phone:
+      →  Contact the super admin — they can run a force-verify to check if the charge went
+         through on Paystack's side, or mark it failed so you can retry
 
 3b. If requiresOtp is true (network requires OTP instead of push)
    →  An OTP is sent to the phone number
@@ -191,7 +236,7 @@ Their JWT contains `role: "org_admin"` and `organizationId: "<their_org_id>"`. T
       POST /api/subscriptions/:id/pay/otp
       Body: { transactionRef: "TXN-XYZSCH-...", otp: "847291" }
       →  200: { success: true, transactionRef: "...", status: "pending" | "success" }
-   →  Subscription is activated after super admin confirms the completed transaction
+   →  Subscription activates automatically once Paystack confirms the charge
 
 4. Confirm subscription is active
    GET /api/subscriptions/:id/status

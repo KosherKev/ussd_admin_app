@@ -7,6 +7,7 @@ import '../../app/theme/app_theme.dart';
 import '../../app/router/routes.dart';
 import '../../shared/services/org_service.dart';
 import '../../widgets/app_card.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -14,36 +15,17 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage>
-    with SingleTickerProviderStateMixin {
+class _LoginPageState extends State<LoginPage> {
   final _formKey          = GlobalKey<FormState>();
   final _emailController  = TextEditingController();
   final _passController   = TextEditingController();
   bool _loading         = false;
   bool _obscurePassword = true;
 
-  late final AnimationController _animCtrl;
-  late final Animation<double>   _fadeIn;
-  late final Animation<Offset>   _slideUp;
-
-  @override
-  void initState() {
-    super.initState();
-    _animCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-    _fadeIn  = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
-    _slideUp = Tween<Offset>(begin: const Offset(0, 0.06), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut));
-    _animCtrl.forward();
-  }
-
   @override
   void dispose() {
     _emailController.dispose();
     _passController.dispose();
-    _animCtrl.dispose();
     super.dispose();
   }
 
@@ -173,191 +155,195 @@ class _LoginPageState extends State<LoginPage>
                 ),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 420),
-                  child: FadeTransition(
-                    opacity: _fadeIn,
-                    child: SlideTransition(
-                      position: _slideUp,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Logo — sharp amber square, P monogram, no BoxShadow
-                          Center(
-                            child: Hero(
-                              tag: 'payhub-logo',
-                              child: Container(
-                                width: 64,
-                                height: 64,
-                                decoration: BoxDecoration(
-                                  color: c.primaryAmber,
-                                  borderRadius: BorderRadius.circular(AppRadius.md),
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    'P',
-                                    style: TextStyle(
-                                      fontFamily: 'Sora',
-                                      fontSize: 30,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.black,
-                                      height: 1,
-                                    ),
-                                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Logo — sharp amber square, P monogram, no BoxShadow
+                      Center(
+                        child: Hero(
+                          tag: 'payhub-logo',
+                          child: Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              color: c.primaryAmber,
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'P',
+                                style: TextStyle(
+                                  fontFamily: 'Sora',
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.black,
+                                  height: 1,
                                 ),
                               ),
                             ),
                           ),
+                        ),
+                      ).animate()
+                       .fade(duration: 500.ms, curve: Curves.easeOut)
+                       .scaleXY(begin: 0.9, end: 1.0, duration: 500.ms, curve: Curves.easeOutBack),
 
-                          const SizedBox(height: AppSpacing.xl),
+                      const SizedBox(height: AppSpacing.xl),
 
-                          // Heading
-                          Text(
-                            'Welcome back',
-                            style: text.displayMedium?.copyWith(
-                              color: c.textPrimary,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.5,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            'Sign in to your PayHub account',
-                            style: text.bodyMedium?.copyWith(color: c.textSecondary),
-                            textAlign: TextAlign.center,
-                          ),
+                      // Heading
+                      Text(
+                        'Welcome back',
+                        style: text.displayMedium?.copyWith(
+                          color: c.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ).animate(delay: 100.ms)
+                       .fade(duration: 500.ms)
+                       .slideY(begin: 0.1, end: 0, duration: 500.ms, curve: Curves.easeOutQuart),
+                      
+                      const SizedBox(height: AppSpacing.xs),
+                      
+                      Text(
+                        'Sign in to your PayHub account',
+                        style: text.bodyMedium?.copyWith(color: c.textSecondary),
+                        textAlign: TextAlign.center,
+                      ).animate(delay: 200.ms)
+                       .fade(duration: 500.ms)
+                       .slideY(begin: 0.1, end: 0, duration: 500.ms, curve: Curves.easeOutQuart),
 
-                          const SizedBox(height: AppSpacing.xxl),
+                      const SizedBox(height: AppSpacing.xxl),
 
-                          // Form card — elevated variant
-                          AppCard(
-                            variant: AppCardVariant.elevated,
-                            padding: const EdgeInsets.all(AppSpacing.lg),
-                            child: Form(
-                              key: _formKey,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  // Email field
-                                  TextFormField(
-                                    controller: _emailController,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Email address',
-                                      prefixIcon: Icon(Icons.email_outlined),
+                      // Form card — elevated variant
+                      AppCard(
+                        variant: AppCardVariant.elevated,
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Email field
+                              TextFormField(
+                                controller: _emailController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Email address',
+                                  prefixIcon: Icon(Icons.email_outlined),
+                                ),
+                                keyboardType: TextInputType.emailAddress,
+                                textInputAction: TextInputAction.next,
+                                autocorrect: false,
+                                enableSuggestions: false,
+                                validator: Validators.email,
+                              ),
+
+                              const SizedBox(height: AppSpacing.md),
+
+                              // Password field
+                              TextFormField(
+                                controller: _passController,
+                                decoration: InputDecoration(
+                                  labelText: 'Password',
+                                  prefixIcon: const Icon(Icons.lock_outline),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscurePassword
+                                          ? Icons.visibility_off_outlined
+                                          : Icons.visibility_outlined,
                                     ),
-                                    keyboardType: TextInputType.emailAddress,
-                                    textInputAction: TextInputAction.next,
-                                    autocorrect: false,
-                                    enableSuggestions: false,
-                                    validator: Validators.email,
-                                  ),
-
-                                  const SizedBox(height: AppSpacing.md),
-
-                                  // Password field
-                                  TextFormField(
-                                    controller: _passController,
-                                    decoration: InputDecoration(
-                                      labelText: 'Password',
-                                      prefixIcon: const Icon(Icons.lock_outline),
-                                      suffixIcon: IconButton(
-                                        icon: Icon(
-                                          _obscurePassword
-                                              ? Icons.visibility_off_outlined
-                                              : Icons.visibility_outlined,
-                                        ),
-                                        onPressed: () => setState(
-                                          () => _obscurePassword = !_obscurePassword,
-                                        ),
-                                      ),
+                                    onPressed: () => setState(
+                                      () => _obscurePassword = !_obscurePassword,
                                     ),
-                                    obscureText: _obscurePassword,
-                                    textInputAction: TextInputAction.done,
-                                    autocorrect: false,
-                                    enableSuggestions: false,
-                                    onFieldSubmitted: (_) => _submit(),
-                                    validator: (v) =>
-                                        Validators.required(v, fieldName: 'Password'),
                                   ),
+                                ),
+                                obscureText: _obscurePassword,
+                                textInputAction: TextInputAction.done,
+                                autocorrect: false,
+                                enableSuggestions: false,
+                                onFieldSubmitted: (_) => _submit(),
+                                validator: (v) =>
+                                    Validators.required(v, fieldName: 'Password'),
+                              ),
 
-                                  const SizedBox(height: AppSpacing.lg),
+                              const SizedBox(height: AppSpacing.lg),
 
-                                  // Sign In button — sharp r=6, amber fill, dark label
-                                  SizedBox(
-                                    height: 52,
-                                    child: ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: c.primaryAmber,
-                                        foregroundColor: Colors.black,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(AppRadius.sm),
-                                        ),
-                                        elevation: 0,
-                                      ),
-                                      onPressed: _loading ? null : _submit,
-                                      child: _loading
-                                          ? SizedBox(
-                                              width: 20,
-                                              height: 20,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                valueColor:
-                                                    AlwaysStoppedAnimation<Color>(
-                                                  isDark
-                                                      ? Colors.black
-                                                      : Colors.white,
-                                                ),
-                                              ),
-                                            )
-                                          : Text(
-                                              'Sign In →',
-                                              style: text.labelLarge?.copyWith(
-                                                color: Colors.black,
-                                                fontWeight: FontWeight.w700,
-                                              ),
+                              // Sign In button — sharp r=6, amber fill, dark label
+                              SizedBox(
+                                height: 52,
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: c.primaryAmber,
+                                    foregroundColor: Colors.black,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius:
+                                          BorderRadius.circular(AppRadius.sm),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                  onPressed: _loading ? null : _submit,
+                                  child: _loading
+                                      ? SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                              isDark
+                                                  ? Colors.black
+                                                  : Colors.white,
                                             ),
-                                    ),
-                                  ),
-
-                                  // Forgot password link
-                                  const SizedBox(height: AppSpacing.sm),
-                                  TextButton(
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: c.textSecondary,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: AppSpacing.xs,
-                                      ),
-                                    ),
-                                    // No route defined yet — spec says navigation
-                                    // target is null for now.
-                                    onPressed: () {},
-                                    child: Text(
-                                      'Forgot password?',
-                                      style: text.bodySmall?.copyWith(
-                                        color: c.textSecondary,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                                          ),
+                                        )
+                                      : Text(
+                                          'Sign In →',
+                                          style: text.labelLarge?.copyWith(
+                                            color: Colors.black,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                ),
                               ),
-                            ),
-                          ),
 
-                          const SizedBox(height: AppSpacing.xl),
-
-                          // Footer
-                          Text(
-                            'PayHub © 2025 — Secure Payment Platform',
-                            style: text.bodySmall?.copyWith(
-                              color: c.textTertiary,
-                              letterSpacing: 0.04,
-                            ),
-                            textAlign: TextAlign.center,
+                              // Forgot password link
+                              const SizedBox(height: AppSpacing.sm),
+                              TextButton(
+                                style: TextButton.styleFrom(
+                                  foregroundColor: c.textSecondary,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: AppSpacing.xs,
+                                  ),
+                                ),
+                                // No route defined yet — spec says navigation
+                                // target is null for now.
+                                onPressed: () {},
+                                child: Text(
+                                  'Forgot password?',
+                                  style: text.bodySmall?.copyWith(
+                                    color: c.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
+                        ),
+                      ).animate(delay: 350.ms)
+                       .fade(duration: 600.ms)
+                       .slideY(begin: 0.1, end: 0, duration: 600.ms, curve: Curves.easeOutQuart),
+
+                      const SizedBox(height: AppSpacing.xl),
+
+                      // Footer
+                      Text(
+                        'PayHub © 2025 — Secure Payment Platform',
+                        style: text.bodySmall?.copyWith(
+                          color: c.textTertiary,
+                          letterSpacing: 0.04,
+                        ),
+                        textAlign: TextAlign.center,
+                      ).animate(delay: 500.ms).fade(duration: 500.ms),
+                    ],
                   ),
                 ),
               ),

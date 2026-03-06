@@ -11,6 +11,7 @@ import '../developer/developer_dashboard_page.dart';
 import '../developer/developer_transactions_page.dart';
 import '../developer/webhooks_list_page.dart';
 import '../developer/api_keys_page.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class HomeShell extends StatefulWidget {
   final int initialIndex;
@@ -146,7 +147,7 @@ class _HomeShellState extends State<HomeShell>
         items:       navItems,
         activeIndex: safeIndex,
         onTap:       _switchTab,
-      ),
+      ).animate().slideY(begin: 1, end: 0, duration: 400.ms, curve: Curves.easeOutCubic),
     );
   }
 }

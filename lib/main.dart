@@ -11,8 +11,12 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
-  final savedTheme = prefs.getString('theme_mode');
-  final themeMode = savedTheme == 'light' ? ThemeMode.light : ThemeMode.dark;
+  final savedTheme = prefs.getString('theme_mode') ?? 'system';
+  final themeMode = switch (savedTheme) {
+    'light' => ThemeMode.light,
+    'dark' => ThemeMode.dark,
+    _ => ThemeMode.system,
+  };
 
   ErrorWidget.builder = (FlutterErrorDetails details) {
     return Scaffold(
@@ -54,13 +58,19 @@ class AppState extends State<App> {
 
   Future<void> setThemeMode(ThemeMode mode) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('theme_mode', mode == ThemeMode.light ? 'light' : 'dark');
+    final modeString = switch (mode) {
+      ThemeMode.light => 'light',
+      ThemeMode.dark => 'dark',
+      ThemeMode.system => 'system',
+    };
+    await prefs.setString('theme_mode', modeString);
     if (mounted) {
       setState(() => _themeMode = mode);
     }
   }
 
   bool get isDark => _themeMode == ThemeMode.dark;
+  ThemeMode get currentThemeMode => _themeMode;
 
   @override
   Widget build(BuildContext context) {

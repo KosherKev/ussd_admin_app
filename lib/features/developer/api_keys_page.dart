@@ -6,6 +6,9 @@ import '../../shared/models/api_key.dart';
 import '../../shared/services/developer_service.dart';
 import '../../shared/utils/helpers.dart';
 import '../../widgets/app_card.dart';
+import '../../widgets/header_icon_button.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'dart:math' as math;
 
 // ---------------------------------------------------------------------------
 // ApiKeysPage — Refined Financial Brutalism
@@ -192,17 +195,10 @@ class _ApiKeysPageState extends State<ApiKeysPage> {
                     ],
                   )),
                   // Refresh
-                  GestureDetector(
-                    onTap: _loading ? null : _load,
-                    child: Container(
-                      width: 38, height: 38,
-                      margin: const EdgeInsets.only(right: AppSpacing.xs),
-                      decoration: BoxDecoration(
-                        color: c.bgSurface,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                        border: Border.all(color: c.borderMid, width: 1)),
-                      child: Icon(Icons.refresh_rounded, size: 17, color: c.textSecondary),
-                    ),
+                  HeaderIconButton(
+                    icon: Icons.refresh_rounded,
+                    onTap: _load,
+                    loading: _loading,
                   ),
                   // New Key
                   GestureDetector(
@@ -222,7 +218,7 @@ class _ApiKeysPageState extends State<ApiKeysPage> {
                               .copyWith(fontSize: 11)),
                       ]),
                     ),
-                  ),
+                  ).animate().fade(duration: 400.ms).slideX(begin: 0.1, end: 0, duration: 400.ms),
                 ],
               ),
             ),
@@ -287,7 +283,10 @@ class _ApiKeysPageState extends State<ApiKeysPage> {
             AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.xxl),
         itemCount: _keys.length,
         separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.xs),
-        itemBuilder: (ctx, i) => _buildKeyCard(_keys[i], c),
+        itemBuilder: (ctx, i) => _buildKeyCard(_keys[i], c)
+            .animate()
+            .fade(delay: (math.min(i, 15) * 50).ms, duration: 300.ms)
+            .slideY(begin: 0.05, end: 0, duration: 300.ms),
       ),
     );
   }

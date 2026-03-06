@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../app/theme/app_theme.dart';
 import '../../shared/utils/helpers.dart';
 import '../../shared/services/reports_service.dart';
 import '../../shared/models/org_summary.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/metric_card.dart';
+import '../../widgets/header_icon_button.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 // ---------------------------------------------------------------------------
 // OrgSummaryPage — Phase 11
@@ -31,6 +34,7 @@ class _OrgSummaryPageState extends State<OrgSummaryPage> {
   String?  _error;
   DateTime? _startDate;
   DateTime? _endDate;
+  String?   _role;
   List<OrgSummaryStats> _stats = [];
 
   @override
@@ -42,12 +46,20 @@ class _OrgSummaryPageState extends State<OrgSummaryPage> {
   Future<void> _fetch() async {
     setState(() { _loading = true; _error = null; });
     try {
+      final prefs = await SharedPreferences.getInstance();
+      _role = prefs.getString('role') ?? 'org_admin';
+
       final stats = await _reports.getOrgSummary(
         widget.orgId,
         startDate: _startDate,
         endDate:   _endDate,
       );
-      if (mounted) setState(() { _stats = stats; _loading = false; });
+      if (mounted) {
+        if (_role == 'org_admin') {
+          stats.removeWhere((s) => s.paymentTypeName.toLowerCase() == 'subscription');
+        }
+        setState(() { _stats = stats; _loading = false; });
+      }
     } catch (e) {
       if (mounted) {
         setState(() { _error = ErrorHandlers.getErrorMessage(e); _loading = false; });
@@ -102,20 +114,11 @@ class _OrgSummaryPageState extends State<OrgSummaryPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Back button
-                  GestureDetector(
+                  HeaderIconButton(
+                    icon: Icons.arrow_back_rounded,
                     onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 38, height: 38,
-                      margin: const EdgeInsets.only(right: AppSpacing.sm),
-                      decoration: BoxDecoration(
-                        color: c.bgSurface,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                        border: Border.all(color: c.borderMid, width: 1),
-                      ),
-                      child: Icon(Icons.arrow_back_rounded,
-                          size: 17, color: c.textSecondary),
-                    ),
                   ),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -141,14 +144,12 @@ class _OrgSummaryPageState extends State<OrgSummaryPage> {
                   ),
                   // Export + refresh
                   Row(mainAxisSize: MainAxisSize.min, children: [
-                    _IconBtn(icon: Icons.file_download_outlined, onTap: _exportCsv, c: c),
+                    HeaderIconButton(icon: Icons.file_download_outlined, onTap: _exportCsv),
                     const SizedBox(width: AppSpacing.xs),
-                    _IconBtn(
-                      icon: _loading
-                          ? Icons.hourglass_empty_rounded
-                          : Icons.refresh_rounded,
-                      onTap: _loading ? null : _fetch,
-                      c: c,
+                    HeaderIconButton(
+                      icon: Icons.refresh_rounded,
+                      onTap: _fetch,
+                      loading: _loading,
                     ),
                   ]),
                 ],
@@ -201,7 +202,7 @@ class _OrgSummaryPageState extends State<OrgSummaryPage> {
                                     c: c,
                                   )),
                                 ]),
-                              ),
+                              ).animate().fade(duration: 400.ms).slideY(begin: 0.1, end: 0, duration: 400.ms),
 
                               const SizedBox(height: AppSpacing.md),
 
@@ -216,7 +217,7 @@ class _OrgSummaryPageState extends State<OrgSummaryPage> {
                                   label: 'TOTAL AMOUNT',
                                   value: CurrencyFormatters.formatCompactGHS(totalAmount),
                                 )),
-                              ]),
+                              ]).animate().fade(delay: 100.ms, duration: 400.ms).slideY(begin: 0.1, end: 0, duration: 400.ms),
 
                               const SizedBox(height: AppSpacing.lg),
 
@@ -225,7 +226,7 @@ class _OrgSummaryPageState extends State<OrgSummaryPage> {
                                 'PAYMENT TYPE BREAKDOWN',
                                 style: AppTypography.labelMono(c.textTertiary)
                                     .copyWith(fontSize: 10, letterSpacing: 0.12),
-                              ),
+                              ).animate().fade(delay: 200.ms, duration: 400.ms),
                               const SizedBox(height: AppSpacing.sm),
 
                               // ── Breakdown ──────────────────────────────
@@ -243,7 +244,7 @@ class _OrgSummaryPageState extends State<OrgSummaryPage> {
                                   : Column(children: [
                                       // Bar chart
                                       if (_stats.length > 1) ...[
-                                        _buildBarChart(c),
+                                        _buildBarChart(c).animate().fade(delay: 250.ms, duration: 400.ms).slideY(begin: 0.1, end: 0, duration: 400.ms),
                                         const SizedBox(height: AppSpacing.sm),
                                       ],
                                       // List rows
@@ -261,8 +262,21 @@ class _OrgSummaryPageState extends State<OrgSummaryPage> {
                                               ))
                                               .toList(),
                                         ),
-                                      ),
+                                      ).animate().fade(delay: 300.ms, duration: 400.ms).slideY(begin: 0.1, end: 0, duration: 400.ms),
                                     ]),
+
+                              // ── Footer Disclaimer ──────────────────────
+                              if (_role == 'org_admin') ...[
+                                const SizedBox(height: AppSpacing.xl),
+                                Center(
+                                  child: Text(
+                                    'Figures exclude internal subscription and platform fees.',
+                                    style: AppTypography.labelMono(c.textTertiary)
+                                        .copyWith(fontSize: 10, fontStyle: FontStyle.italic),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -388,26 +402,7 @@ class _OrgSummaryPageState extends State<OrgSummaryPage> {
 
 // ── Private helpers ───────────────────────────────────────────────────────────
 
-class _IconBtn extends StatelessWidget {
-  const _IconBtn({required this.icon, required this.c, this.onTap});
-  final IconData  icon;
-  final AppColors c;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
-    child: Container(
-      width: 38, height: 38,
-      decoration: BoxDecoration(
-        color: c.bgSurface,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-        border: Border.all(color: c.borderMid, width: 1),
-      ),
-      child: Icon(icon, size: 17, color: c.textSecondary),
-    ),
-  );
-}
+// ── Private header button — replaced by HeaderIconButton ─────────────────────
 
 class _DateBtn extends StatelessWidget {
   const _DateBtn({required this.label, required this.onTap, required this.c});

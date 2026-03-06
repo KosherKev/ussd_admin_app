@@ -11,6 +11,8 @@ import '../../shared/services/reports_service.dart';
 import '../../shared/services/org_service.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/metric_card.dart';
+import '../../widgets/header_icon_button.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class DashboardPage extends StatefulWidget {
   final String orgId;
@@ -26,6 +28,7 @@ class _DashboardPageState extends State<DashboardPage> {
   bool               _loading     = true;
   String?            _error;
   String?            _orgName;
+  String?            _role;
   List<Transaction>       _recent      = [];
   int                     _totalTxns   = 0;
   double                  _totalAmount = 0;
@@ -33,7 +36,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Map<DateTime, int>      _dailyCounts = {};
   Map<String, int>        _typeCounts  = {};
   Map<String, double>     _typeAmounts = {};
-  List<OrgSummaryStats>   _summaryStats = [];
+
 
   @override
   void initState() {
@@ -46,6 +49,7 @@ class _DashboardPageState extends State<DashboardPage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       _orgName = prefs.getString('org_name');
+      _role    = prefs.getString('role') ?? 'org_admin';
 
       if ((_orgName == null || _orgName!.isEmpty) && widget.orgId.isNotEmpty) {
         try {
@@ -73,27 +77,32 @@ class _DashboardPageState extends State<DashboardPage> {
           Future.value(<OrgSummaryStats>[]),
       ]);
 
-      final result  = futures[0]! as dynamic;
-      final summary = futures[1]! as List<OrgSummaryStats>;
+      final result  = futures[0] as dynamic;
+      final summary = futures[1] as List<OrgSummaryStats>;
 
       _recent      = result.items as List<Transaction>;
       _totalTxns   = result.total as int;
-      _summaryStats = summary;
+
+      if (_role == 'org_admin') {
+        _recent.removeWhere((t) => t.paymentType.toLowerCase() == 'subscription');
+        summary.removeWhere((s) => s.paymentTypeName.toLowerCase() == 'subscription');
+      }
+
 
       // Use summary aggregates for totals (covers ALL transactions, not just fetched page)
       if (summary.isNotEmpty) {
         _totalAmount = summary.fold(0.0, (s, e) => s + e.totalAmount);
         _totalComm   = summary.fold(0.0, (s, e) => s + (e.totalAmount * 0.015)); // 1.5% est.
       } else {
-        _totalAmount = (_recent as List<Transaction>).fold(0.0, (s, t) => s + t.amount);
-        _totalComm   = (_recent as List<Transaction>).fold(0.0, (s, t) => s + t.commission);
+        _totalAmount = _recent.fold(0.0, (s, t) => s + t.amount);
+        _totalComm   = _recent.fold(0.0, (s, t) => s + t.commission);
       }
 
-      _dailyCounts = _buildDailyCounts(_recent as List<Transaction>);
+      _dailyCounts = _buildDailyCounts(_recent);
 
       final bCounts  = <String, int>{};
       final bAmounts = <String, double>{};
-      for (final t in _recent as List<Transaction>) {
+      for (final t in _recent) {
         bCounts[t.paymentType]  = (bCounts[t.paymentType]  ?? 0) + 1;
         bAmounts[t.paymentType] = (bAmounts[t.paymentType] ?? 0) + t.amount;
       }
@@ -177,12 +186,11 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
           ),
           Row(mainAxisSize: MainAxisSize.min, children: [
-            _HeaderIconBtn(icon: Icons.refresh_rounded, onTap: _load, c: c),
+            HeaderIconButton(icon: Icons.refresh_rounded, onTap: _load, loading: _loading),
             const SizedBox(width: AppSpacing.xs),
-            _HeaderIconBtn(
+            HeaderIconButton(
               icon: Icons.account_circle_outlined,
               onTap: () => Navigator.pushNamed(context, Routes.settingsProfile),
-              c: c,
             ),
           ]),
         ],
@@ -214,7 +222,7 @@ class _DashboardPageState extends State<DashboardPage> {
     padding: const EdgeInsets.fromLTRB(
         AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.xxl),
     children: [
-      _buildHeroCard(c),
+      _buildHeroCard(c).animate().fade(duration: 400.ms).slideY(begin: 0.1, end: 0, duration: 400.ms),
       const SizedBox(height: AppSpacing.sm),
 
       // 2-col metric grid
@@ -228,12 +236,12 @@ class _DashboardPageState extends State<DashboardPage> {
           label: 'COMMISSION',
           value: 'GHS ${CurrencyFormatters.formatNumber(_totalComm.round())}',
         )),
-      ]),
+      ]).animate().fade(delay: 100.ms, duration: 400.ms).slideY(begin: 0.1, end: 0, duration: 400.ms),
 
       const SizedBox(height: AppSpacing.lg),
-      _buildSectionLabel('DAILY ACTIVITY', c),
+      _buildSectionLabel('DAILY ACTIVITY', c).animate().fade(delay: 200.ms, duration: 400.ms),
       const SizedBox(height: AppSpacing.sm),
-      _buildFlBarChart(c),
+      _buildFlBarChart(c).animate().fade(delay: 200.ms, duration: 400.ms).slideY(begin: 0.1, end: 0, duration: 400.ms),
 
       const SizedBox(height: AppSpacing.lg),
       _buildQuickAction(
@@ -245,13 +253,13 @@ class _DashboardPageState extends State<DashboardPage> {
                       arguments: widget.orgId)
             : null,
         c: c,
-      ),
+      ).animate().fade(delay: 300.ms, duration: 400.ms).slideY(begin: 0.1, end: 0, duration: 400.ms),
 
       if (_typeCounts.isNotEmpty) ...[
         const SizedBox(height: AppSpacing.lg),
-        _buildSectionLabel('PAYMENT TYPES', c),
+        _buildSectionLabel('PAYMENT TYPES', c).animate().fade(delay: 400.ms, duration: 400.ms),
         const SizedBox(height: AppSpacing.sm),
-        _buildTypeBreakdown(c),
+        _buildTypeBreakdown(c).animate().fade(delay: 400.ms, duration: 400.ms).slideY(begin: 0.1, end: 0, duration: 400.ms),
       ],
 
       const SizedBox(height: AppSpacing.lg),
@@ -267,7 +275,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     .copyWith(fontSize: 12)),
           ),
         ],
-      ),
+      ).animate().fade(delay: 500.ms, duration: 400.ms),
       const SizedBox(height: AppSpacing.sm),
 
       if (_recent.isEmpty)
@@ -279,12 +287,16 @@ class _DashboardPageState extends State<DashboardPage> {
                 style: Theme.of(context).textTheme.bodyMedium
                     ?.copyWith(color: c.textSecondary)),
           ]),
-        )
+        ).animate().fade(delay: 550.ms, duration: 400.ms)
       else
-        ..._recent.take(5).map((t) => Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-          child: _buildTxnItem(t, c),
-        )),
+        ..._recent.take(5).toList().asMap().entries.map((entry) {
+          final idx = entry.key;
+          final t   = entry.value;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+            child: _buildTxnItem(t, c),
+          ).animate().fade(delay: (550 + (idx * 50)).ms, duration: 400.ms).slideX(begin: 0.05, end: 0, duration: 400.ms);
+        }),
     ],
   );
 
@@ -612,27 +624,4 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 }
 
-// ── Header icon button ────────────────────────────────────────────────────────
-class _HeaderIconBtn extends StatelessWidget {
-  const _HeaderIconBtn(
-      {required this.icon, required this.onTap, required this.c});
-  final IconData     icon;
-  final VoidCallback onTap;
-  final AppColors    c;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 38, height: 38,
-        decoration: BoxDecoration(
-          color: c.bgSurface,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          border: Border.all(color: c.borderMid, width: 1),
-        ),
-        child: Icon(icon, size: 18, color: c.textSecondary),
-      ),
-    );
-  }
-}
+// ── Dashboard header — handled by HeaderIconButton ──────────────────────────

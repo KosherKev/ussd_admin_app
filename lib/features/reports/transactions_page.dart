@@ -7,9 +7,12 @@ import '../../shared/utils/helpers.dart';
 import '../../shared/models/transaction.dart';
 import '../../shared/models/paged.dart';
 import '../../shared/services/reports_service.dart';
+import 'dart:math' as math;
 import '../../widgets/app_card.dart';
 import '../../widgets/filter_chips_row.dart';
 import '../../widgets/status_chip.dart';
+import '../../widgets/header_icon_button.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 // ---------------------------------------------------------------------------
 // TransactionsPage — Phase 11
@@ -35,6 +38,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
   bool     _loading      = true;
   String?  _error;
   String?  _orgId;
+  String?  _role;
   bool     _filtersOpen  = false;
 
   // Filters
@@ -56,6 +60,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
   Future<void> _init() async {
     final prefs = await SharedPreferences.getInstance();
     _orgId = prefs.getString('org_id');
+    _role  = prefs.getString('role') ?? 'org_admin';
     _fetch(page: 1);
   }
 
@@ -70,7 +75,13 @@ class _TransactionsPageState extends State<TransactionsPage> {
         page:      page,
         limit:     15,
       );
-      if (mounted) setState(() { _paged = res; _loading = false; });
+      if (mounted) {
+        // Filter out 'subscription' payments if org_admin
+        if (_role == 'org_admin') {
+          res.items.removeWhere((t) => t.paymentType.toLowerCase() == 'subscription');
+        }
+        setState(() { _paged = res; _loading = false; });
+      }
     } catch (e) {
       if (mounted) setState(() { _error = ErrorHandlers.getErrorMessage(e); _loading = false; });
     }
@@ -154,27 +165,21 @@ class _TransactionsPageState extends State<TransactionsPage> {
                   ),
                   // Action buttons
                   Row(mainAxisSize: MainAxisSize.min, children: [
-                    _HeaderBtn(
+                    HeaderIconButton(
                       icon: Icons.file_download_outlined,
                       onTap: _exportCsv,
-                      c: c,
                     ),
                     const SizedBox(width: AppSpacing.xs),
-                    _HeaderBtn(
-                      icon: _loading
-                          ? Icons.hourglass_empty_rounded
-                          : Icons.refresh_rounded,
-                      onTap: _loading
-                          ? null
-                          : () => _fetch(page: _paged?.page ?? 1),
-                      c: c,
+                    HeaderIconButton(
+                      icon: Icons.refresh_rounded,
+                      onTap: () => _fetch(page: _paged?.page ?? 1),
+                      loading: _loading,
                     ),
                     const SizedBox(width: AppSpacing.xs),
                     // Filter toggle — highlights when filters active
-                    _HeaderBtn(
+                    HeaderIconButton(
                       icon: Icons.tune_rounded,
                       onTap: () => setState(() => _filtersOpen = !_filtersOpen),
-                      c: c,
                       active: _filtersOpen || hasFilters,
                     ),
                   ]),
@@ -301,7 +306,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                                   separatorBuilder: (_, __) =>
                                       const SizedBox(height: AppSpacing.xs),
                                   itemBuilder: (_, i) =>
-                                      _buildCard(_paged!.items[i], c),
+                                      _buildCard(_paged!.items[i], c).animate().fade(delay: (math.min(i, 15) * 50).ms, duration: 300.ms).slideX(begin: 0.05, end: 0, duration: 300.ms),
                                 ),
                         ),
             ),
@@ -435,38 +440,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
 // ── Small private widgets ─────────────────────────────────────────────────────
 
-class _HeaderBtn extends StatelessWidget {
-  const _HeaderBtn({
-    required this.icon,
-    required this.c,
-    this.onTap,
-    this.active = false,
-  });
-  final IconData  icon;
-  final AppColors c;
-  final VoidCallback? onTap;
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 38, height: 38,
-        decoration: BoxDecoration(
-          color: active ? c.amberBg : c.bgSurface,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          border: Border.all(
-            color: active ? c.amberBorder : c.borderMid,
-            width: 1,
-          ),
-        ),
-        child: Icon(icon, size: 17,
-            color: active ? c.primaryAmber : c.textSecondary),
-      ),
-    );
-  }
-}
+// ── Private header button — replaced by HeaderIconButton ─────────────────────
 
 class _DateBtn extends StatelessWidget {
   const _DateBtn({required this.label, required this.onTap, required this.c});

@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../shared/http/client.dart';
 import '../../app/router/routes.dart';
 import '../../app/theme/app_theme.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -11,31 +12,11 @@ class SplashPage extends StatefulWidget {
   State<SplashPage> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends State<SplashPage>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _fadeIn;
-  late final Animation<double> _scale;
-
+class _SplashPageState extends State<SplashPage> {
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    );
-    _fadeIn = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
-    _scale  = Tween<double>(begin: 0.88, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
-    );
-    _controller.forward();
     _checkAuth();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
   }
 
   Future<void> _checkAuth() async {
@@ -120,68 +101,68 @@ class _SplashPageState extends State<SplashPage>
           ),
           // Main content
           Center(
-            child: FadeTransition(
-              opacity: _fadeIn,
-              child: ScaleTransition(
-                scale: _scale,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Sharp amber logo square — no glow shadow
-                    Hero(
-                      tag: 'payhub-logo',
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: c.primaryAmber,
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'P',
-                            style: TextStyle(
-                              fontFamily: 'Sora',
-                              fontSize: 38,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.black,
-                              height: 1,
-                            ),
-                          ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Sharp amber logo square — no glow shadow
+                Hero(
+                  tag: 'payhub-logo',
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: c.primaryAmber,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'P',
+                        style: TextStyle(
+                          fontFamily: 'Sora',
+                          fontSize: 38,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.black,
+                          height: 1,
                         ),
                       ),
                     ),
+                  ),
+                ).animate()
+                 .fade(duration: 600.ms, curve: Curves.easeOut)
+                 .scaleXY(begin: 0.88, end: 1.0, duration: 800.ms, curve: Curves.easeOutBack),
 
-                    const SizedBox(height: AppSpacing.xl),
+                const SizedBox(height: AppSpacing.xl),
 
-                    // PayHub wordmark
-                    Text(
-                      'PayHub',
-                      style: AppTypography.displayHero(c.textPrimary),
-                    ),
+                // PayHub wordmark
+                Text(
+                  'PayHub',
+                  style: AppTypography.displayHero(c.textPrimary),
+                ).animate(delay: 150.ms)
+                 .fade(duration: 600.ms)
+                 .slideY(begin: 0.1, end: 0, duration: 600.ms, curve: Curves.easeOutQuart),
 
-                    const SizedBox(height: AppSpacing.xs),
+                const SizedBox(height: AppSpacing.xs),
 
-                    Text(
-                      'Payment Management Platform',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: c.textSecondary,
-                      ),
-                    ),
+                Text(
+                  'Payment Management Platform',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: c.textSecondary,
+                  ),
+                ).animate(delay: 300.ms)
+                 .fade(duration: 600.ms)
+                 .slideY(begin: 0.2, end: 0, duration: 600.ms, curve: Curves.easeOutQuart),
 
-                    const SizedBox(height: AppSpacing.xxxl),
+                const SizedBox(height: AppSpacing.xxxl),
 
-                    SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(c.primaryAmber),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(c.primaryAmber),
+                  ),
+                ).animate(delay: 600.ms).fade(duration: 400.ms),
+              ],
             ),
           ),
         ],

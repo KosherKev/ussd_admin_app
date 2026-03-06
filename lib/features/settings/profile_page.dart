@@ -9,6 +9,8 @@ import '../../shared/services/org_service.dart';
 import '../../widgets/app_card.dart';
 import '../../main.dart';
 import '../home/home_shell.dart';
+import '../../widgets/header_icon_button.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 // ---------------------------------------------------------------------------
 // ProfilePage (Settings) — Phase 14
@@ -39,6 +41,7 @@ class _ProfilePageState extends State<ProfilePage> {
   bool    _sendReceiptSms = false;
   bool    _devMode        = false;
   bool    _savingOrg      = false;
+  final   _formKey        = GlobalKey<FormState>();
 
   final _phoneController = TextEditingController();
 
@@ -109,6 +112,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _saveOrgSettings() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
     final orgId = _orgId;
     if (orgId == null || orgId.isEmpty) return;
     setState(() => _savingOrg = true);
@@ -154,7 +158,6 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     final c        = context.appColors;
     final appState = App.of(context);
-    final isDark   = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: c.background,
@@ -194,23 +197,10 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                   // Refresh
-                  GestureDetector(
-                    onTap: _loading ? null : _load,
-                    child: Container(
-                      width: 38, height: 38,
-                      decoration: BoxDecoration(
-                        color: c.bgSurface,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                        border: Border.all(color: c.borderMid, width: 1),
-                      ),
-                      child: _loading
-                          ? Padding(
-                              padding: const EdgeInsets.all(10),
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 1.5, color: c.primaryAmber))
-                          : Icon(Icons.refresh_rounded,
-                              size: 17, color: c.textSecondary),
-                    ),
+                  HeaderIconButton(
+                    icon: Icons.refresh_rounded,
+                    onTap: _load,
+                    loading: _loading,
                   ),
                 ],
               ),
@@ -235,11 +225,13 @@ class _ProfilePageState extends State<ProfilePage> {
                             ElevatedButton(
                                 onPressed: _load, child: const Text('Retry')),
                           ]))
-                      : ListView(
-                          padding: const EdgeInsets.fromLTRB(
-                              AppSpacing.md, AppSpacing.md,
-                              AppSpacing.md, AppSpacing.xxl),
-                          children: [
+                      : Form(
+                          key: _formKey,
+                          child: ListView(
+                            padding: const EdgeInsets.fromLTRB(
+                                AppSpacing.md, AppSpacing.md,
+                                AppSpacing.md, AppSpacing.xxl),
+                            children: [
 
                             // ── Avatar / identity block ──────────────────
                             Row(
@@ -310,14 +302,14 @@ class _ProfilePageState extends State<ProfilePage> {
                                         .copyWith(fontSize: 11)),
                                 ),
                               ],
-                            ),
+                            ).animate().fade(duration: 400.ms).slideY(begin: 0.1, end: 0, duration: 400.ms),
 
                             const SizedBox(height: AppSpacing.lg),
-                            Divider(height: 1, color: c.borderSubtle),
+                            Divider(height: 1, color: c.borderSubtle).animate().fade(delay: 50.ms, duration: 400.ms),
                             const SizedBox(height: AppSpacing.md),
 
                             // ── Account Details ──────────────────────────
-                            _SectionLabel('ACCOUNT DETAILS', c),
+                            _SectionLabel('ACCOUNT DETAILS', c).animate().fade(delay: 100.ms, duration: 400.ms),
                             const SizedBox(height: AppSpacing.xs),
                             AppCard(
                               child: Column(children: [
@@ -339,11 +331,11 @@ class _ProfilePageState extends State<ProfilePage> {
                                   ),
                                 ],
                               ]),
-                            ),
+                            ).animate().fade(delay: 150.ms, duration: 400.ms).slideY(begin: 0.1, end: 0, duration: 400.ms),
 
                             // ── Subscription ─────────────────────────────
                             const SizedBox(height: AppSpacing.md),
-                            _SectionLabel('SUBSCRIPTION', c),
+                            _SectionLabel('SUBSCRIPTION', c).animate().fade(delay: 200.ms, duration: 400.ms),
                             const SizedBox(height: AppSpacing.xs),
                             AppCard(
                               onTap: () {
@@ -400,122 +392,144 @@ class _ProfilePageState extends State<ProfilePage> {
                                 Icon(Icons.chevron_right_rounded,
                                     size: 18, color: c.textTertiary),
                               ]),
-                            ),
+                            ).animate().fade(delay: 250.ms, duration: 400.ms).slideY(begin: 0.1, end: 0, duration: 400.ms),
 
                             // ── Organisation settings (org_admin only) ───
-                            if (_orgId != null &&
-                                _orgId!.isNotEmpty &&
-                                _role == 'org_admin') ...[
-                              const SizedBox(height: AppSpacing.md),
-                              _SectionLabel('ORGANISATION', c),
-                              const SizedBox(height: AppSpacing.xs),
-                              AppCard(
-                                child: Column(children: [
-                                  TextFormField(
-                                    controller: _phoneController,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Contact Phone',
-                                      prefixIcon:
-                                          Icon(Icons.phone_outlined),
+                              if (_orgId != null &&
+                                  _orgId!.isNotEmpty &&
+                                  _role == 'org_admin') ...[
+                                const SizedBox(height: AppSpacing.md),
+                                _SectionLabel('ORGANISATION', c).animate().fade(delay: 300.ms, duration: 400.ms),
+                                const SizedBox(height: AppSpacing.xs),
+                                AppCard(
+                                  child: Column(children: [
+                                    TextFormField(
+                                      controller: _phoneController,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Contact Phone',
+                                        prefixIcon: Icon(Icons.phone_outlined),
+                                      ),
+                                      keyboardType: TextInputType.phone,
+                                      validator: (v) {
+                                        if (v == null || v.trim().isEmpty) return 'Required';
+                                        if (!RegExp(r'^\+?[0-9]{10,15}$').hasMatch(v.trim())) {
+                                          return 'Invalid phone number';
+                                        }
+                                        return null;
+                                      },
                                     ),
-                                    keyboardType: TextInputType.phone,
-                                  ),
-                                  const SizedBox(height: AppSpacing.sm),
-                                  Divider(
-                                      height: 1, color: c.borderSubtle),
-                                  const SizedBox(height: AppSpacing.xs),
-                                  Row(children: [
-                                    Icon(Icons.sms_outlined,
-                                        size: 18, color: c.textSecondary),
-                                    const SizedBox(width: AppSpacing.sm),
-                                    Expanded(child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text('SMS Receipts',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodyMedium
-                                              ?.copyWith(
-                                                  color: c.textPrimary)),
-                                        Text(
-                                          'Send receipt SMS to customers',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodySmall
-                                              ?.copyWith(
-                                                  color: c.textSecondary)),
-                                      ],
-                                    )),
-                                    Switch(
-                                      value: _sendReceiptSms,
-                                      onChanged: (v) =>
-                                          setState(() => _sendReceiptSms = v),
+                                    const SizedBox(height: AppSpacing.sm),
+                                    Divider(height: 1, color: c.borderSubtle),
+                                    const SizedBox(height: AppSpacing.xs),
+                                    Row(children: [
+                                      Icon(Icons.sms_outlined, size: 18, color: c.textSecondary),
+                                      const SizedBox(width: AppSpacing.sm),
+                                      Expanded(child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text('SMS Receipts', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: c.textPrimary)),
+                                          Text('Send receipt SMS to customers', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: c.textSecondary)),
+                                        ],
+                                      )),
+                                      Switch(
+                                        value: _sendReceiptSms,
+                                        onChanged: (v) => setState(() => _sendReceiptSms = v),
+                                      ),
+                                    ]),
+                                    const SizedBox(height: AppSpacing.sm),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton(
+                                        onPressed: _savingOrg ? null : _saveOrgSettings,
+                                        child: _savingOrg
+                                            ? const SizedBox(
+                                                width: 20, height: 20,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  valueColor: AlwaysStoppedAnimation(Colors.black),
+                                                ))
+                                            : const Text('Save Organisation Settings'),
+                                      ),
                                     ),
                                   ]),
-                                  const SizedBox(height: AppSpacing.sm),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: ElevatedButton(
-                                      onPressed: _savingOrg
-                                          ? null
-                                          : _saveOrgSettings,
-                                      child: _savingOrg
-                                          ? const SizedBox(
-                                              width: 20, height: 20,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                valueColor:
-                                                    AlwaysStoppedAnimation(
-                                                        Colors.black),
-                                              ))
-                                          : const Text(
-                                              'Save Organisation Settings'),
-                                    ),
-                                  ),
-                                ]),
-                              ),
-                            ],
+                                ).animate().fade(delay: 350.ms, duration: 400.ms).slideY(begin: 0.1, end: 0, duration: 400.ms),
+                              ],
 
                             // ── Preferences panel ─────────────────────────
                             const SizedBox(height: AppSpacing.md),
-                            _SectionLabel('PREFERENCES', c),
+                            _SectionLabel('PREFERENCES', c).animate().fade(delay: 400.ms, duration: 400.ms),
                             const SizedBox(height: AppSpacing.xs),
                             AppCard(
                               child: Column(children: [
-                                // Dark Mode
-                                Row(children: [
-                                  Text(
-                                    isDark ? '🌙' : '☀️',
-                                    style: const TextStyle(fontSize: 16),
-                                  ),
-                                  const SizedBox(width: AppSpacing.sm),
-                                  Expanded(child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Dark Mode',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium
-                                            ?.copyWith(color: c.textPrimary)),
-                                      Text(isDark ? 'Enabled' : 'Disabled',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                                color: c.textSecondary)),
-                                    ],
-                                  )),
-                                  Switch(
-                                    value: isDark,
-                                    onChanged: (v) =>
-                                        appState?.setThemeMode(
-                                            v ? ThemeMode.dark : ThemeMode.light),
-                                  ),
-                                ]),
+                                // Theme Selector
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(children: [
+                                      const Text('🎨', style: TextStyle(fontSize: 16)),
+                                      const SizedBox(width: AppSpacing.sm),
+                                      Expanded(child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text('Theme',
+                                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: c.textPrimary)),
+                                          Text('Choose your preferred appearance',
+                                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: c.textSecondary)),
+                                        ],
+                                      )),
+                                    ]),
+                                    const SizedBox(height: AppSpacing.md),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: SegmentedButton<ThemeMode>(
+                                        showSelectedIcon: false,
+                                        segments: const [
+                                          ButtonSegment(
+                                            value: ThemeMode.system,
+                                            label: Text('System'),
+                                            icon: Icon(Icons.settings_suggest_outlined, size: 16),
+                                          ),
+                                          ButtonSegment(
+                                            value: ThemeMode.light,
+                                            label: Text('Light'),
+                                            icon: Icon(Icons.light_mode_outlined, size: 16),
+                                          ),
+                                          ButtonSegment(
+                                            value: ThemeMode.dark,
+                                            label: Text('Dark'),
+                                            icon: Icon(Icons.dark_mode_outlined, size: 16),
+                                          ),
+                                        ],
+                                        selected: {appState?.currentThemeMode ?? ThemeMode.system},
+                                        onSelectionChanged: (Set<ThemeMode> newSelection) {
+                                          appState?.setThemeMode(newSelection.first);
+                                        },
+                                        style: ButtonStyle(
+                                          backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+                                            if (states.contains(WidgetState.selected)) {
+                                              return c.primaryAmber.withValues(alpha: 0.15);
+                                            }
+                                            return Colors.transparent;
+                                          }),
+                                          foregroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+                                            if (states.contains(WidgetState.selected)) {
+                                              return c.primaryAmber;
+                                            }
+                                            return c.textSecondary;
+                                          }),
+                                          side: WidgetStateProperty.all(BorderSide(color: c.borderMid)),
+                                          shape: WidgetStateProperty.all(
+                                            RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
 
+                                const SizedBox(height: AppSpacing.sm),
                                 Divider(height: 1, color: c.borderSubtle),
+                                const SizedBox(height: AppSpacing.sm),
 
                                 // Developer Mode
                                 Row(children: [
@@ -554,7 +568,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   ),
                                 ]),
                               ]),
-                            ),
+                            ).animate().fade(delay: 450.ms, duration: 400.ms).slideY(begin: 0.1, end: 0, duration: 400.ms),
 
                             const SizedBox(height: AppSpacing.xl),
 
@@ -575,9 +589,10 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ),
                                 child: const Text('Sign Out'),
                               ),
-                            ),
+                            ).animate().fade(delay: 550.ms, duration: 400.ms).slideY(begin: 0.1, end: 0, duration: 400.ms),
                           ],
                         ),
+                      ),
             ),
           ],
         ),

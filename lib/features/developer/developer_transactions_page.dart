@@ -8,6 +8,9 @@ import '../../shared/services/reports_service.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/filter_chips_row.dart';
 import '../../widgets/status_chip.dart';
+import '../../widgets/header_icon_button.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'dart:math' as math;
 
 // ---------------------------------------------------------------------------
 // DeveloperTransactionsPage — Phase 11
@@ -128,23 +131,10 @@ class _DeveloperTransactionsPageState
                     ),
                   ),
                   // Refresh button
-                  GestureDetector(
-                    onTap: _loading ? null : () => _load(),
-                    child: Container(
-                      width: 38, height: 38,
-                      decoration: BoxDecoration(
-                        color: c.bgSurface,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                        border: Border.all(color: c.borderMid, width: 1),
-                      ),
-                      child: _loading
-                          ? Padding(
-                              padding: const EdgeInsets.all(10),
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 1.5, color: c.primaryAmber))
-                          : Icon(Icons.refresh_rounded,
-                              size: 17, color: c.textSecondary),
-                    ),
+                  HeaderIconButton(
+                    icon: Icons.refresh_rounded,
+                    onTap: _load,
+                    loading: _loading,
                   ),
                 ],
               ),
@@ -216,7 +206,7 @@ class _DeveloperTransactionsPageState
                                           color: c.primaryAmber),
                                     ));
                                   }
-                                  return _buildCard(_items[i], c);
+                                  return _buildCard(_items[i], c).animate().fade(delay: (math.min(i, 15) * 50).ms, duration: 300.ms).slideX(begin: 0.05, end: 0, duration: 300.ms);
                                 },
                               ),
                             ),
