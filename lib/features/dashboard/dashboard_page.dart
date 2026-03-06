@@ -88,14 +88,17 @@ class _DashboardPageState extends State<DashboardPage> {
         summary.removeWhere((s) => s.paymentTypeName.toLowerCase() == 'subscription');
       }
 
-
-      // Use summary aggregates for totals (covers ALL transactions, not just fetched page)
+      // Use summary aggregates for totals (covers ALL transactions, not just fetched page).
+      // summary only contains completed transactions — totalAmount is revenue actually received.
+      // If summary is empty (no completed transactions yet), volume and commission are 0,
+      // not a sum of failed/processing charges.
       if (summary.isNotEmpty) {
         _totalAmount = summary.fold(0.0, (s, e) => s + e.totalAmount);
-        _totalComm   = summary.fold(0.0, (s, e) => s + (e.totalAmount * 0.015)); // 1.5% est.
+        _totalComm   = summary.fold(0.0, (s, e) => s + e.totalCommission);
       } else {
-        _totalAmount = _recent.fold(0.0, (s, t) => s + t.amount);
-        _totalComm   = _recent.fold(0.0, (s, t) => s + t.commission);
+        // No completed transactions — show zeros, not a misleading sum of failed amounts
+        _totalAmount = 0.0;
+        _totalComm   = 0.0;
       }
 
       _dailyCounts = _buildDailyCounts(_recent);
