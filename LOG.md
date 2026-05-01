@@ -25,7 +25,7 @@
 ## Project Location
 
 ```
-/Users/kevinafenyo/Documents/GitHub/ussd-service/ussd_admin
+/Users/kevinafenyo/Documents/GitHub/payhub_admin
 ```
 
 ## Key Files
